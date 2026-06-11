@@ -69,6 +69,7 @@ export function createInitialGameState(
       stunnedTurnsLeft: 0,
       hand,
       isReady: false,
+      isBot: (p as { id: string; name: string; isBot?: boolean }).isBot ?? false,
       encouragedNextTurn: false,
       playsThisTurn: 1,
       maxPlaysThisTurn: 1,
@@ -131,6 +132,7 @@ export function buildPlayerView(state: GameState, playerId: string): PlayerView 
     stunnedTurnsLeft: p.stunnedTurnsLeft,
     cardCount: p.hand.length,
     isReady: p.isReady,
+    isBot: p.isBot,
     playsThisTurn: p.playsThisTurn,
     maxPlaysThisTurn: p.maxPlaysThisTurn,
   }))

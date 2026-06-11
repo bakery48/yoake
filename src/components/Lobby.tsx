@@ -2,6 +2,14 @@
 
 import { useState, useEffect } from 'react'
 
+interface PlayerInfo {
+  id: string
+  name: string
+  cardCount: number
+  isReady: boolean
+  isBot?: boolean
+}
+
 interface RoomInfo {
   roomId: string
   playerCount: number
@@ -17,13 +25,14 @@ interface Props {
   rooms: RoomInfo[]
   error: string | null
   connected: boolean
-  // If already in a room (lobby state)
   inRoom: boolean
   roomId: string | null
-  players: { id: string; name: string; cardCount: number; isReady: boolean }[]
+  players: PlayerInfo[]
   myId: string | null
   hostId: string | null
   onStartGame: (roomId: string) => void
+  onAddCpu: (roomId: string) => void
+  onRemoveCpu: (roomId: string, cpuId: string) => void
 }
 
 export default function Lobby({
@@ -39,6 +48,8 @@ export default function Lobby({
   myId,
   hostId,
   onStartGame,
+  onAddCpu,
+  onRemoveCpu,
 }: Props) {
   const [playerName, setPlayerName] = useState('')
   const [joinCode, setJoinCode] = useState('')
@@ -48,10 +59,10 @@ export default function Lobby({
     if (tab === 'list') onListRooms()
   }, [tab])
 
-  // If we're in a room waiting to start
   if (inRoom && roomId) {
     const isHost = myId === hostId
     const canStart = players.length >= 4
+    const canAddCpu = players.length < 8
 
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
@@ -69,26 +80,54 @@ export default function Lobby({
               </div>
             </div>
 
-            <div className="text-xs text-gray-500 mb-1">参加者 ({players.length}/8)</div>
-            <div className="space-y-2 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-gray-500">参加者 ({players.length}/8)</div>
+              {isHost && canAddCpu && (
+                <button
+                  onClick={() => onAddCpu(roomId)}
+                  className="text-xs bg-blue-900/40 text-blue-400 border border-blue-700/50 px-3 py-1 rounded-lg hover:bg-blue-900/60 transition-all"
+                >
+                  + CPU を追加
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-2 mb-4">
               {players.map((p) => (
                 <div
                   key={p.id}
                   className={`flex items-center gap-2 rounded-lg px-3 py-2 ${
                     p.id === myId
                       ? 'bg-amber-glow/10 border border-amber-glow/30'
+                      : p.isBot
+                      ? 'bg-blue-950/30 border border-blue-800/40'
                       : 'bg-dark-bg border border-dark-border'
                   }`}
                 >
                   <div
-                    className={`w-2 h-2 rounded-full ${p.id === hostId ? 'bg-amber-glow' : 'bg-gray-600'}`}
+                    className={`w-2 h-2 rounded-full ${
+                      p.id === hostId ? 'bg-amber-glow' : p.isBot ? 'bg-blue-500' : 'bg-gray-600'
+                    }`}
                   />
                   <span className="text-sm text-white flex-1">{p.name}</span>
+                  {p.isBot && (
+                    <span className="text-[10px] text-blue-400 bg-blue-900/30 px-1.5 py-0.5 rounded">
+                      CPU
+                    </span>
+                  )}
                   {p.id === hostId && (
                     <span className="text-[10px] text-amber-glow">ホスト</span>
                   )}
                   {p.id === myId && (
                     <span className="text-[10px] text-gray-500">あなた</span>
+                  )}
+                  {isHost && p.isBot && (
+                    <button
+                      onClick={() => onRemoveCpu(roomId, p.id)}
+                      className="text-[10px] text-red-500 hover:text-red-400 ml-1"
+                    >
+                      ✕
+                    </button>
                   )}
                 </div>
               ))}
@@ -97,6 +136,11 @@ export default function Lobby({
             {!canStart && (
               <p className="text-xs text-yellow-500 text-center mb-4">
                 ゲームを開始するには4人以上必要です（現在{players.length}人）
+                {isHost && players.length < 4 && (
+                  <span className="block mt-0.5 text-gray-500">
+                    ← 「CPU を追加」ボタンで練習対戦できます
+                  </span>
+                )}
               </p>
             )}
 
@@ -130,7 +174,6 @@ export default function Lobby({
   return (
     <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Title */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-amber-glow mb-2 tracking-tight">
             夜が明けるまで
@@ -146,7 +189,6 @@ export default function Lobby({
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex bg-dark-card border border-dark-border rounded-xl p-1 mb-4">
           {(['create', 'join', 'list'] as const).map((t) => (
             <button
@@ -191,7 +233,7 @@ export default function Lobby({
                 ルームを作成する
               </button>
               <p className="text-xs text-gray-600 text-center">
-                4文字のルームコードが生成されます
+                作成後、CPU を追加して1人で練習対戦できます
               </p>
             </div>
           )}
@@ -278,13 +320,12 @@ export default function Lobby({
           )}
         </div>
 
-        {/* Game info */}
         <div className="mt-6 bg-dark-card border border-dark-border rounded-2xl p-4 text-xs text-gray-500 space-y-1">
           <div className="font-semibold text-gray-400 mb-2">ゲーム概要</div>
           <div>👥 4〜8人プレイ / 8ラウンド制</div>
           <div>⚔️ 防衛者：8ラウンド生き残る（崩壊1以下）</div>
           <div>🐍 裏切り者：2セクションを崩壊させる</div>
-          <div>🗼 砦の4セクションをカードで守れ！</div>
+          <div>🤖 CPU対戦：ルーム作成後にCPUを追加</div>
         </div>
       </div>
     </div>

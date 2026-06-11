@@ -15,13 +15,14 @@ export default function Home() {
     joinRoom,
     startGame,
     listRooms,
+    addCpu,
+    removeCpu,
     rooms,
     socket,
   } = useSocket()
 
   const [pendingRoomId, setPendingRoomId] = useState<string | null>(null)
 
-  // Listen for room creation/join confirmations
   useEffect(() => {
     if (!socket) return
 
@@ -42,7 +43,6 @@ export default function Home() {
     }
   }, [socket])
 
-  // Navigate to game room once game starts
   useEffect(() => {
     if (gameState && gameState.phase !== 'lobby' && pendingRoomId) {
       router.push(`/game/${pendingRoomId}`)
@@ -56,7 +56,7 @@ export default function Home() {
       onCreateRoom={createRoom}
       onJoinRoom={joinRoom}
       onListRooms={listRooms}
-      rooms={rooms as any}
+      rooms={rooms}
       error={error}
       connected={connected}
       inRoom={!!inRoom}
@@ -68,12 +68,15 @@ export default function Home() {
               name: p.name,
               cardCount: p.cardCount,
               isReady: p.isReady,
+              isBot: p.isBot,
             }))
           : []
       }
       myId={gameState?.myPlayer.id ?? null}
       hostId={gameState?.hostId ?? null}
       onStartGame={startGame}
+      onAddCpu={addCpu}
+      onRemoveCpu={removeCpu}
     />
   )
 }

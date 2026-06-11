@@ -60,6 +60,7 @@ export default function PlayerList({
               {player.name}
               {isMe && <span className="text-xs text-gray-500 ml-1">（あなた）</span>}
               {isAlly && <span className="text-xs text-red-600 ml-1">（仲間）</span>}
+              {player.isBot && <span className="text-[10px] text-blue-400 ml-1">CPU</span>}
               {player.isTransformed && <span className="text-xs ml-1">👹</span>}
             </span>
 

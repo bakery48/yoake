@@ -4,7 +4,6 @@ import {
   Player,
   SectionId,
   RoomInfo,
-  PlayerView,
 } from './types'
 import {
   createInitialGameState,
@@ -19,10 +18,22 @@ import {
   resolveDraw,
   transformPlayer,
 } from './gameLogic'
+import {
+  defenderCpuAction,
+  traitorCpuAction,
+  traitorCpuVote,
+  traitorCpuMarkerTarget,
+  shouldTransform,
+} from './cpuAI'
 
 // In-memory storage
 const rooms = new Map<string, GameState>()
 const lobbyPlayers = new Map<string, { id: string; name: string; roomId: string }>()
+
+let cpuCounter = 0
+function newCpuId(): string {
+  return `cpu_${++cpuCounter}_${Date.now()}`
+}
 
 function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -33,6 +44,7 @@ function generateRoomCode(): string {
 
 function broadcastGameState(io: Server, state: GameState) {
   for (const player of state.players) {
+    if (player.isBot) continue
     const view = buildPlayerView(state, player.id)
     io.to(player.id).emit('game:state', view)
   }
@@ -54,7 +66,6 @@ function broadcastRoomList(io: Server) {
   io.emit('lobby:rooms', list)
 }
 
-// Auto-advance phases after a short delay
 function schedulePhaseAdvance(io: Server, roomId: string, delayMs: number, fn: () => void) {
   setTimeout(() => {
     const state = rooms.get(roomId)
@@ -63,6 +74,140 @@ function schedulePhaseAdvance(io: Server, roomId: string, delayMs: number, fn: (
   }, delayMs)
 }
 
+// ─── CPU Auto-actions ──────────────────────────────────────────────────────────
+
+function triggerCpuVotes(io: Server, roomId: string) {
+  const state = rooms.get(roomId)
+  if (!state || state.phase !== 'traitor-voting') return
+
+  const pendingBots = state.players.filter(
+    (p) => p.isBot && p.role === 'traitor' && !state.traitorVotesSubmitted.includes(p.id),
+  )
+  if (pendingBots.length === 0) return
+
+  let current = state
+  for (const bot of pendingBots) {
+    const vote = traitorCpuVote(current, bot)
+    const { state: next, allVoted } = submitTraitorVote(current, bot.id, vote)
+    current = next
+    if (allVoted) {
+      rooms.set(roomId, current)
+      broadcastGameState(io, current)
+      schedulePhaseAdvance(io, roomId, 500, () => {
+        const s = rooms.get(roomId)!
+        const resolved = resolveTraitorVoting(s)
+        rooms.set(roomId, resolved)
+        broadcastGameState(io, resolved)
+        if (resolved.phase === 'watchtower-reveal') {
+          schedulePhaseAdvance(io, roomId, 4000, () => {
+            const s2 = rooms.get(roomId)!
+            if (s2.phase !== 'watchtower-reveal') return
+            const advanced = advanceFromWatchtowerReveal(s2)
+            rooms.set(roomId, advanced)
+            broadcastGameState(io, advanced)
+            triggerCpuActions(io, roomId)
+          })
+        } else {
+          triggerCpuActions(io, roomId)
+        }
+      })
+      return
+    }
+  }
+  rooms.set(roomId, current)
+  broadcastGameState(io, current)
+}
+
+function triggerCpuActions(io: Server, roomId: string) {
+  const state = rooms.get(roomId)
+  if (!state || state.phase !== 'action') return
+
+  const pendingBots = state.players.filter(
+    (p) => p.isBot && !state.actionsSubmitted.includes(p.id),
+  )
+  if (pendingBots.length === 0) return
+
+  // Stagger CPU actions slightly for a more natural feel
+  pendingBots.forEach((bot, idx) => {
+    schedulePhaseAdvance(io, roomId, 400 + idx * 300, () => {
+      const s = rooms.get(roomId)
+      if (!s || s.phase !== 'action') return
+      const currentBot = s.players.find((p) => p.id === bot.id)
+      if (!currentBot || s.actionsSubmitted.includes(bot.id)) return
+
+      // Check if bot should transform before acting
+      if (currentBot.role === 'traitor' && !currentBot.isTransformed && shouldTransform(s, currentBot)) {
+        const transformed = transformPlayer(s, bot.id)
+        rooms.set(roomId, transformed)
+        broadcastGameState(io, transformed)
+        // Re-read state after transform and submit action
+        const s2 = rooms.get(roomId)!
+        const updatedBot = s2.players.find((p) => p.id === bot.id)!
+        const action = traitorCpuAction(s2, updatedBot)
+        if (!action.cardId) return
+        const { state: afterAction, allSubmitted } = submitPlayerAction(s2, bot.id, action.cardId, action.targetSection)
+        rooms.set(roomId, afterAction)
+        broadcastGameState(io, afterAction)
+        if (allSubmitted) resolveAfterAllActions(io, roomId)
+        return
+      }
+
+      const action =
+        currentBot.role === 'traitor'
+          ? traitorCpuAction(s, currentBot)
+          : defenderCpuAction(s, currentBot)
+
+      if (!action.cardId) return
+      const { state: afterAction, allSubmitted } = submitPlayerAction(s, bot.id, action.cardId, action.targetSection)
+      rooms.set(roomId, afterAction)
+      broadcastGameState(io, afterAction)
+      if (allSubmitted) resolveAfterAllActions(io, roomId)
+    })
+  })
+}
+
+function resolveAfterAllActions(io: Server, roomId: string) {
+  schedulePhaseAdvance(io, roomId, 800, () => {
+    const s = rooms.get(roomId)!
+    if (s.phase !== 'action') return
+    const afterEffects = resolveImmediateEffects(s)
+    rooms.set(roomId, afterEffects)
+    broadcastGameState(io, afterEffects)
+
+    schedulePhaseAdvance(io, roomId, 3000, () => {
+      const s2 = rooms.get(roomId)!
+      if (s2.phase !== 'marker-visualization') return
+      const afterMarkers = resolveMarkerVisualization(s2)
+      rooms.set(roomId, afterMarkers)
+      broadcastGameState(io, afterMarkers)
+
+      schedulePhaseAdvance(io, roomId, 3000, () => {
+        const s3 = rooms.get(roomId)!
+        if (s3.phase !== 'enemy-attack') return
+        const afterAttack = resolveEnemyAttack(s3)
+        rooms.set(roomId, afterAttack)
+        broadcastGameState(io, afterAttack)
+
+        if (afterAttack.phase === 'game-over') return
+
+        schedulePhaseAdvance(io, roomId, 3000, () => {
+          const s4 = rooms.get(roomId)!
+          if (s4.phase !== 'draw') return
+          const afterDraw = resolveDraw(s4)
+          rooms.set(roomId, afterDraw)
+          broadcastGameState(io, afterDraw)
+          // Start next round CPU votes
+          if (afterDraw.phase === 'traitor-voting') {
+            schedulePhaseAdvance(io, roomId, 800, () => triggerCpuVotes(io, roomId))
+          }
+        })
+      })
+    })
+  })
+}
+
+// ─── Socket event handlers ────────────────────────────────────────────────────
+
 export function registerSocketHandlers(io: Server, socket: Socket) {
   const { id: socketId } = socket
 
@@ -70,8 +215,6 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     let roomId = generateRoomCode()
     while (rooms.has(roomId)) roomId = generateRoomCode()
 
-    const player = { id: socketId, name: payload.playerName }
-    // Create a lobby-state game
     const state: GameState = {
       roomId,
       players: [
@@ -86,6 +229,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
           stunnedTurnsLeft: 0,
           hand: [],
           isReady: false,
+          isBot: false,
           encouragedNextTurn: false,
           playsThisTurn: 1,
           maxPlaysThisTurn: 1,
@@ -135,10 +279,10 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
       return
     }
 
-    const newPlayer = {
+    const newPlayer: Player = {
       id: socketId,
       name: playerName,
-      role: 'defender' as const,
+      role: 'defender',
       isTransformed: false,
       isCaptured: false,
       capturedTurnsLeft: 0,
@@ -146,6 +290,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
       stunnedTurnsLeft: 0,
       hand: [],
       isReady: false,
+      isBot: false,
       encouragedNextTurn: false,
       playsThisTurn: 1,
       maxPlaysThisTurn: 1,
@@ -166,22 +311,82 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     broadcastRoomList(io)
   })
 
+  // Add CPU players to the room
+  socket.on('lobby:add_cpu', (payload: { roomId: string; count?: number }) => {
+    const state = rooms.get(payload.roomId)
+    if (!state || state.hostId !== socketId || state.phase !== 'lobby') return
+
+    const toAdd = Math.min(payload.count ?? 1, 8 - state.players.length)
+    if (toAdd <= 0) return
+
+    const cpuNames = ['CPU-アルファ', 'CPU-ベータ', 'CPU-ガンマ', 'CPU-デルタ', 'CPU-イプシロン', 'CPU-ゼータ', 'CPU-イータ']
+    const existingCpuCount = state.players.filter((p) => p.isBot).length
+
+    const newCpus: Player[] = Array.from({ length: toAdd }, (_, i) => ({
+      id: newCpuId(),
+      name: cpuNames[(existingCpuCount + i) % cpuNames.length],
+      role: 'defender' as const,
+      isTransformed: false,
+      isCaptured: false,
+      capturedTurnsLeft: 0,
+      isStunned: false,
+      stunnedTurnsLeft: 0,
+      hand: [],
+      isReady: false,
+      isBot: true,
+      encouragedNextTurn: false,
+      playsThisTurn: 1,
+      maxPlaysThisTurn: 1,
+      noCarryoverNextTurn: false,
+    }))
+
+    const newState: GameState = {
+      ...state,
+      players: [...state.players, ...newCpus],
+      log: [...state.log, `CPU ${toAdd}人 を追加しました`],
+    }
+    rooms.set(payload.roomId, newState)
+    broadcastGameState(io, newState)
+    broadcastRoomList(io)
+  })
+
+  // Remove a CPU player from the room
+  socket.on('lobby:remove_cpu', (payload: { roomId: string; cpuId: string }) => {
+    const state = rooms.get(payload.roomId)
+    if (!state || state.hostId !== socketId || state.phase !== 'lobby') return
+
+    const cpu = state.players.find((p) => p.id === payload.cpuId && p.isBot)
+    if (!cpu) return
+
+    const newState: GameState = {
+      ...state,
+      players: state.players.filter((p) => p.id !== payload.cpuId),
+      log: [...state.log, `${cpu.name} を削除しました`],
+    }
+    rooms.set(payload.roomId, newState)
+    broadcastGameState(io, newState)
+    broadcastRoomList(io)
+  })
+
   socket.on('game:start', (payload: { roomId: string }) => {
     const state = rooms.get(payload.roomId)
     if (!state || state.hostId !== socketId) return
     if (state.players.length < 4) {
-      socket.emit('error', { message: '4人以上必要です' })
+      socket.emit('error', { message: '4人以上必要です（CPUを追加できます）' })
       return
     }
 
     const newState = createInitialGameState(
       payload.roomId,
-      state.players.map((p) => ({ id: p.id, name: p.name })),
+      state.players.map((p) => ({ id: p.id, name: p.name, isBot: p.isBot })),
       socketId,
     )
     rooms.set(payload.roomId, newState)
     broadcastGameState(io, newState)
     broadcastRoomList(io)
+
+    // Kick off CPU votes for first round
+    schedulePhaseAdvance(io, payload.roomId, 1000, () => triggerCpuVotes(io, payload.roomId))
   })
 
   socket.on('traitor:vote', (payload: { roomId: string; targetSection: SectionId }) => {
@@ -199,7 +404,6 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
         rooms.set(payload.roomId, resolved)
         broadcastGameState(io, resolved)
 
-        // If watchtower-reveal, auto-advance after 4 seconds
         if (resolved.phase === 'watchtower-reveal') {
           schedulePhaseAdvance(io, payload.roomId, 4000, () => {
             const s2 = rooms.get(payload.roomId)!
@@ -207,9 +411,15 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
             const advanced = advanceFromWatchtowerReveal(s2)
             rooms.set(payload.roomId, advanced)
             broadcastGameState(io, advanced)
+            triggerCpuActions(io, payload.roomId)
           })
+        } else {
+          triggerCpuActions(io, payload.roomId)
         }
       })
+    } else {
+      // Let remaining CPU traitors vote
+      schedulePhaseAdvance(io, payload.roomId, 600, () => triggerCpuVotes(io, payload.roomId))
     }
   })
 
@@ -227,42 +437,10 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     broadcastGameState(io, newState)
 
     if (allSubmitted) {
-      schedulePhaseAdvance(io, payload.roomId, 800, () => {
-        const s = rooms.get(payload.roomId)!
-        if (s.phase !== 'action') return
-        const afterEffects = resolveImmediateEffects(s)
-        rooms.set(payload.roomId, afterEffects)
-        broadcastGameState(io, afterEffects)
-
-        // Marker visualization - auto advance after 3s
-        schedulePhaseAdvance(io, payload.roomId, 3000, () => {
-          const s2 = rooms.get(payload.roomId)!
-          if (s2.phase !== 'marker-visualization') return
-          const afterMarkers = resolveMarkerVisualization(s2)
-          rooms.set(payload.roomId, afterMarkers)
-          broadcastGameState(io, afterMarkers)
-
-          // Enemy attack - auto advance after 3s
-          schedulePhaseAdvance(io, payload.roomId, 3000, () => {
-            const s3 = rooms.get(payload.roomId)!
-            if (s3.phase !== 'enemy-attack') return
-            const afterAttack = resolveEnemyAttack(s3)
-            rooms.set(payload.roomId, afterAttack)
-            broadcastGameState(io, afterAttack)
-
-            if (afterAttack.phase === 'game-over') return
-
-            // Draw phase - auto advance after 3s
-            schedulePhaseAdvance(io, payload.roomId, 3000, () => {
-              const s4 = rooms.get(payload.roomId)!
-              if (s4.phase !== 'draw') return
-              const afterDraw = resolveDraw(s4)
-              rooms.set(payload.roomId, afterDraw)
-              broadcastGameState(io, afterDraw)
-            })
-          })
-        })
-      })
+      resolveAfterAllActions(io, payload.roomId)
+    } else {
+      // Trigger any CPU players that haven't acted yet
+      schedulePhaseAdvance(io, payload.roomId, 400, () => triggerCpuActions(io, payload.roomId))
     }
   })
 
@@ -288,14 +466,13 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     if (!state) return
 
     if (state.phase === 'lobby') {
-      // Remove player from lobby
       const newPlayers = state.players.filter((p) => p.id !== socketId)
-      if (newPlayers.length === 0) {
+      if (newPlayers.filter((p) => !p.isBot).length === 0) {
         rooms.delete(info.roomId)
         broadcastRoomList(io)
         return
       }
-      const newHostId = state.hostId === socketId ? newPlayers[0].id : state.hostId
+      const newHostId = state.hostId === socketId ? newPlayers.find((p) => !p.isBot)!.id : state.hostId
       const newState: GameState = {
         ...state,
         players: newPlayers,
@@ -306,6 +483,5 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
       broadcastGameState(io, newState)
       broadcastRoomList(io)
     }
-    // If game in progress, keep player ghost (reconnection not implemented)
   })
 }

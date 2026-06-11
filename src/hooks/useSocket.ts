@@ -27,6 +27,8 @@ export interface UseSocketReturn {
   submitAction: (roomId: string, cardId: string, targetSection: SectionId) => void
   transform: (roomId: string) => void
   listRooms: () => void
+  addCpu: (roomId: string) => void
+  removeCpu: (roomId: string, cpuId: string) => void
   rooms: RoomInfo[]
 }
 
@@ -100,6 +102,14 @@ export function useSocket(): UseSocketReturn {
     socketRef.current?.emit('lobby:list')
   }, [])
 
+  const addCpu = useCallback((roomId: string) => {
+    socketRef.current?.emit('lobby:add_cpu', { roomId })
+  }, [])
+
+  const removeCpu = useCallback((roomId: string, cpuId: string) => {
+    socketRef.current?.emit('lobby:remove_cpu', { roomId, cpuId })
+  }, [])
+
   return {
     socket: socketRef.current,
     gameState,
@@ -112,6 +122,8 @@ export function useSocket(): UseSocketReturn {
     submitAction,
     transform,
     listRooms,
+    addCpu,
+    removeCpu,
     rooms,
   }
 }

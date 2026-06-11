@@ -71,6 +71,7 @@ export interface Player {
   stunnedTurnsLeft: number
   hand: Card[]
   isReady: boolean
+  isBot: boolean
   // Encourage state
   encouragedNextTurn: boolean  // draws 2 and plays 2 next turn
   playsThisTurn: number
@@ -138,6 +139,7 @@ export interface PlayerPublicInfo {
   stunnedTurnsLeft: number
   cardCount: number
   isReady: boolean
+  isBot: boolean
   playsThisTurn: number
   maxPlaysThisTurn: number
 }
@@ -182,4 +184,9 @@ export interface RoomInfo {
   maxPlayers: number
   hostName: string
   started: boolean
+}
+
+export interface AddCpuPayload {
+  roomId: string
+  count?: number
 }
