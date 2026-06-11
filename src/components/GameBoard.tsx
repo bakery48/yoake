@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { PlayerView, SectionId, GamePhase } from '@/game/types'
-import SectionCard from './SectionCard'
+import FortressMap from './FortressMap'
 import PlayerHand from './PlayerHand'
 import PlayerList from './PlayerList'
 import PhaseIndicator from './PhaseIndicator'
@@ -141,37 +141,29 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
       <div className="flex flex-1 overflow-hidden gap-0">
         {/* Left: Sections + Action area */}
         <div className="flex flex-col flex-1 overflow-y-auto p-4 gap-4">
-          {/* Sections grid */}
-          <div>
-            <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">砦セクション</div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {state.sections.map((section) => (
-                <SectionCard
-                  key={section.id}
-                  section={section}
-                  isSelected={selectedSection === section.id}
-                  isAttackTarget={
-                    state.attackTarget === section.id &&
-                    (state.phase === 'watchtower-reveal' ||
-                      state.phase === 'enemy-attack' ||
-                      state.phase === 'marker-visualization' ||
-                      (isTraitor && state.phase === 'action'))
-                  }
-                  selectable={
-                    (state.phase === 'action' && !needsPlayerTarget && !actionSubmitted) ||
-                    (isTraitor && state.phase === 'traitor-voting' && !voteSubmitted)
-                  }
-                  onClick={() => {
-                    if (isTraitor && state.phase === 'traitor-voting' && !voteSubmitted) {
-                      handleVote(section.id as SectionId)
-                    } else if (state.phase === 'action' && !needsPlayerTarget) {
-                      setSelectedSection(section.id as SectionId)
-                    }
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Fortress map with section overlays */}
+          <FortressMap
+            sections={state.sections}
+            attackTarget={state.attackTarget}
+            selectedSection={selectedSection}
+            showAttackTarget={
+              state.phase === 'watchtower-reveal' ||
+              state.phase === 'enemy-attack' ||
+              state.phase === 'marker-visualization' ||
+              (isTraitor && state.phase === 'action')
+            }
+            selectable={
+              (state.phase === 'action' && !needsPlayerTarget && !actionSubmitted) ||
+              (isTraitor && state.phase === 'traitor-voting' && !voteSubmitted)
+            }
+            onSectionClick={(id) => {
+              if (isTraitor && state.phase === 'traitor-voting' && !voteSubmitted) {
+                handleVote(id)
+              } else if (state.phase === 'action' && !needsPlayerTarget) {
+                setSelectedSection(id)
+              }
+            }}
+          />
 
           {/* Watchtower reveal */}
           {state.phase === 'watchtower-reveal' && state.watchtowerRevealTarget && (
