@@ -14,7 +14,7 @@ const BONUS_DESC: Record<SectionId, string> = {
   watchtower: '攻撃目標を開示',
   gate:       'ダメージ-1',
   armory:     '持ち越し+1、修復+1',
-  barracks:   '毎ラウンド最低HPに+2',
+  barracks:   '毎ラウンド最低HPに+1',
 }
 
 interface Props {

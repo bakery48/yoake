@@ -637,7 +637,7 @@ export function resolveEnemyAttack(state: GameState): GameState {
     return sec
   })
 
-  // Barracks bonus: auto HP+2 to lowest HP section
+  // Barracks bonus: auto HP+1 to lowest HP section
   const barracks = sections.find((s) => s.id === 'barracks')!
   if (barracks.bonusActive && !barracks.isCollapsed) {
     const alive = sections.filter((s) => !s.isCollapsed).sort((a, b) => a.hp - b.hp)
@@ -645,20 +645,10 @@ export function resolveEnemyAttack(state: GameState): GameState {
       const lowestId = alive[0].id
       sections = sections.map((sec) =>
         sec.id === lowestId
-          ? { ...sec, hp: Math.min(sec.hp + 2, sec.maxHp), bonusActive: (sec.hp + 2) >= sec.maxHp }
-          : sec,
-      )
-      log.push(`🏥 兵舎ボーナス：${sections.find(s => s.id === lowestId)?.nameJa} +2HP`)
-    }
-    // Barracks also gives HP+1 to any section — auto-apply to second lowest
-    const alive2 = sections.filter((s) => !s.isCollapsed).sort((a, b) => a.hp - b.hp)
-    if (alive2.length > 1) {
-      const secId = alive2[1].id
-      sections = sections.map((sec) =>
-        sec.id === secId
           ? { ...sec, hp: Math.min(sec.hp + 1, sec.maxHp), bonusActive: (sec.hp + 1) >= sec.maxHp }
           : sec,
       )
+      log.push(`🏥 兵舎ボーナス：${sections.find(s => s.id === lowestId)?.nameJa} +1HP`)
     }
   }
 
