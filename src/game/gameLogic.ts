@@ -553,10 +553,17 @@ export function resolveImmediateEffects(state: GameState): GameState {
         const stunTargetId = (action as any).targetPlayerId as string | undefined
         const targetPlayer = s.players.find(p => p.id === (stunTargetId ?? ''))
         if (targetPlayer && !targetPlayer.isTransformed) {
-          s.players = s.players.map(p =>
-            p.id === targetPlayer.id ? { ...p, isStunned: true, stunnedTurnsLeft: 1 } : p,
+          const invisAction = Object.values(s.playedCards).find(
+            a => a.playerId === targetPlayer.id && a.card.effect === 'invisible',
           )
-          log.push(`⚡ ${playerName} がスタン！${targetPlayer.name} を1ターン制限`)
+          if (invisAction) {
+            log.push(`🫥 ${targetPlayer.name} はインビジブル中のためスタンできない`)
+          } else {
+            s.players = s.players.map(p =>
+              p.id === targetPlayer.id ? { ...p, isCaptured: true, capturedTurnsLeft: 3 } : p,
+            )
+            log.push(`⚡ ${playerName} がスタン！${targetPlayer.name} を3ターン拘束`)
+          }
         }
         break
       }

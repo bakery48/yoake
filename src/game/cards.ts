@@ -120,8 +120,8 @@ export const TRANSFORMATION_CARDS: Omit<Card, 'id'>[] = [
     name: 'Stun',
     nameJa: 'スタン',
     type: 'transformation',
-    description: 'Restrict 1 defender for 1 turn (capture/release cards only)',
-    descriptionJa: '防衛者1人を1ターン制限する（捕縛/解放カードのみ使用可）',
+    description: 'Capture 1 defender for 3 turns',
+    descriptionJa: '防衛者1人を3ターン拘束する',
     effect: 'stun',
   },
   {
