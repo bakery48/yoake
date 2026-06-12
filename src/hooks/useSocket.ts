@@ -55,7 +55,7 @@ export interface UseSocketReturn {
   joinRoom: (roomId: string, playerName: string) => void
   startGame: (roomId: string) => void
   submitVote: (roomId: string, targetSection: SectionId) => void
-  submitAction: (roomId: string, cardId: string, targetSection: SectionId) => void
+  submitAction: (roomId: string, cardId: string, targetSection: SectionId, sabotageSection?: SectionId) => void
   transform: (roomId: string) => void
   leaveRoom: (roomId: string) => void
   rematch: (roomId: string) => void
@@ -94,7 +94,7 @@ export function useSocket(): UseSocketReturn {
   const joinRoom    = useCallback((roomId: string, playerName: string) => s.emit('lobby:join', { roomId, playerName }), [s])
   const startGame   = useCallback((roomId: string) => s.emit('game:start', { roomId }), [s])
   const submitVote  = useCallback((roomId: string, t: SectionId) => s.emit('traitor:vote', { roomId, targetSection: t }), [s])
-  const submitAction = useCallback((roomId: string, cardId: string, t: SectionId) => s.emit('action:submit', { roomId, cardId, targetSection: t }), [s])
+  const submitAction = useCallback((roomId: string, cardId: string, t: SectionId, sabotageSection?: SectionId) => s.emit('action:submit', { roomId, cardId, targetSection: t, sabotageSection }), [s])
   const transform   = useCallback((roomId: string) => s.emit('player:transform', { roomId }), [s])
   const leaveRoom   = useCallback((roomId: string) => { globalPendingRoomId = null; globalGameState = null; s.emit('lobby:leave', { roomId }); notify() }, [s])
   const rematch     = useCallback((roomId: string) => s.emit('lobby:rematch', { roomId }), [s])

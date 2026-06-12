@@ -303,6 +303,7 @@ export function submitPlayerAction(
   playerId: string,
   cardId: string,
   targetSection: SectionId,
+  sabotageSection?: SectionId,
 ): { state: GameState; allSubmitted: boolean } {
   const player = state.players.find((p) => p.id === playerId)
   if (!player) return { state, allSubmitted: false }
@@ -328,7 +329,13 @@ export function submitPlayerAction(
     p.id === playerId ? { ...p, hand: newHand, isReady: true } : p,
   )
 
-  const action: PlayerAction = { playerId, card, targetSection }
+  const canSabotage = player.role === 'traitor' && !player.isTransformed
+  const action: PlayerAction = {
+    playerId,
+    card,
+    targetSection,
+    ...(canSabotage && sabotageSection ? { sabotageSection } : {}),
+  }
   const newPlayedCards = { ...state.playedCards, [playerId]: action }
   const submittedSet2 = new Set(state.actionsSubmitted)
   submittedSet2.add(playerId)
@@ -588,6 +595,20 @@ export function resolveImmediateEffects(state: GameState): GameState {
         break
       }
     }
+  }
+
+  // Apply un-transformed traitor sabotage damage (1 damage each, source hidden)
+  for (const action of Object.values(s.playedCards)) {
+    if (!action.sabotageSection) continue
+    const sabSec = s.sections.find(sec => sec.id === action.sabotageSection)
+    if (!sabSec || sabSec.isCollapsed) continue
+    s.sections = s.sections.map(sec =>
+      sec.id === action.sabotageSection
+        ? { ...sec, hp: Math.max(0, sec.hp - 1) }
+        : sec,
+    )
+    const sabSecName = s.sections.find(sec => sec.id === action.sabotageSection)?.nameJa ?? action.sabotageSection
+    log.push(`🔧 謎の破壊工作！${sabSecName} に1ダメージ`)
   }
 
   // Update section bonus states

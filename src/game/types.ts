@@ -58,6 +58,7 @@ export interface PlayerAction {
   playerId: string
   card: Card
   targetSection: SectionId
+  sabotageSection?: SectionId  // un-transformed traitor secret sabotage (+1 damage)
 }
 
 export interface Player {
@@ -173,6 +174,7 @@ export interface SubmitActionPayload {
   roomId: string
   cardId: string
   targetSection: SectionId
+  sabotageSection?: SectionId
 }
 
 export interface TransformPayload {

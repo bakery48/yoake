@@ -172,7 +172,7 @@ function triggerCpuActions(io: Server, roomId: string) {
         const updatedBot = s2.players.find((p) => p.id === bot.id)!
         const action = traitorCpuAction(s2, updatedBot)
         const { state: afterAction, allSubmitted } = action.cardId
-          ? submitPlayerAction(s2, bot.id, action.cardId, action.targetSection)
+          ? submitPlayerAction(s2, bot.id, action.cardId, action.targetSection, action.sabotageSection)
           : autoSkipPlayer(s2, bot.id)
         rooms.set(roomId, afterAction)
         broadcastGameState(io, afterAction)
@@ -186,7 +186,7 @@ function triggerCpuActions(io: Server, roomId: string) {
           : defenderCpuAction(s, currentBot)
 
       const { state: afterAction, allSubmitted } = action.cardId
-        ? submitPlayerAction(s, bot.id, action.cardId, action.targetSection)
+        ? submitPlayerAction(s, bot.id, action.cardId, action.targetSection, (action as any).sabotageSection)
         : autoSkipPlayer(s, bot.id)
       rooms.set(roomId, afterAction)
       broadcastGameState(io, afterAction)
@@ -466,7 +466,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     }
   })
 
-  socket.on('action:submit', (payload: { roomId: string; cardId: string; targetSection: SectionId }) => {
+  socket.on('action:submit', (payload: { roomId: string; cardId: string; targetSection: SectionId; sabotageSection?: SectionId }) => {
     const state = rooms.get(payload.roomId)
     if (!state || state.phase !== 'action') return
 
@@ -475,6 +475,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
       socketId,
       payload.cardId,
       payload.targetSection,
+      payload.sabotageSection,
     )
     rooms.set(payload.roomId, newState)
     broadcastGameState(io, newState)

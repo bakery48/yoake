@@ -14,7 +14,7 @@ const SECTION_ORDER: SectionId[] = ['watchtower', 'gate', 'armory', 'barracks']
 interface Props {
   state: PlayerView
   onVote: (sectionId: SectionId) => void
-  onAction: (cardId: string, targetSection: SectionId) => void
+  onAction: (cardId: string, targetSection: SectionId, sabotageSection?: SectionId) => void
   onTransform: () => void
   onLeave: () => void
   onRematch: () => void
@@ -24,6 +24,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [selectedSection, setSelectedSection] = useState<SectionId | null>(null)
   const [selectedTargetPlayerId, setSelectedTargetPlayerId] = useState<string | null>(null)
+  const [selectedSabotageSection, setSelectedSabotageSection] = useState<SectionId | null>(null)
   const [voteSubmitted, setVoteSubmitted] = useState(false)
   const [actionSubmitted, setActionSubmitted] = useState(false)
   const [transformBanner, setTransformBanner] = useState<string | null>(null)
@@ -43,6 +44,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
     setSelectedCardId(null)
     setSelectedSection(null)
     setSelectedTargetPlayerId(null)
+    setSelectedSabotageSection(null)
     if (state.phase === 'traitor-voting') setVoteSubmitted(false)
     if (state.phase === 'action') setActionSubmitted(false)
   }, [state.phase])
@@ -75,19 +77,19 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
 
   function handleSubmitAction() {
     if (!selectedCardId) return
+    const sabotage = isTraitor && !isTransformed ? selectedSabotageSection ?? undefined : undefined
     if (needsPlayerTarget && selectedTargetPlayerId) {
-      // Use targetPlayerId as targetSection for these cards (server decodes)
-      onAction(selectedCardId, selectedTargetPlayerId as unknown as SectionId)
+      onAction(selectedCardId, selectedTargetPlayerId as unknown as SectionId, sabotage)
     } else if (isSelfTarget) {
-      // Self-targeting card: pass a dummy section (server ignores it)
-      onAction(selectedCardId, 'watchtower' as SectionId)
+      onAction(selectedCardId, 'watchtower' as SectionId, sabotage)
     } else if (selectedSection) {
-      onAction(selectedCardId, selectedSection)
+      onAction(selectedCardId, selectedSection, sabotage)
     }
     setActionSubmitted(true)
     setSelectedCardId(null)
     setSelectedSection(null)
     setSelectedTargetPlayerId(null)
+    setSelectedSabotageSection(null)
   }
 
   function handleVote(sectionId: SectionId) {
@@ -394,6 +396,40 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
                       )}
                       {!isSelfTarget && selectedSection && !needsPlayerTarget && (
                         <div className="mt-2 text-xs text-green-400">対象: {sectionNames[selectedSection]}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Sabotage picker — un-transformed traitors only */}
+                  {isTraitor && !isTransformed && !actionSubmitted && (
+                    <div className="bg-red-950/60 border border-red-800/50 rounded-xl p-3 backdrop-blur-sm">
+                      <div className="text-xs font-bold text-red-400 mb-2">🔧 秘密の破壊工作（任意）</div>
+                      <div className="flex gap-2 flex-wrap">
+                        {SECTION_ORDER.map((id) => {
+                          const sec = state.sections.find((s) => s.id === id)!
+                          const isSelected = selectedSabotageSection === id
+                          return (
+                            <button
+                              key={id}
+                              disabled={sec.isCollapsed}
+                              onClick={() => setSelectedSabotageSection(isSelected ? null : id)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                                sec.isCollapsed
+                                  ? 'opacity-30 cursor-not-allowed border-gray-700 text-gray-600'
+                                  : isSelected
+                                  ? 'bg-red-700 border-red-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                                  : 'bg-red-950/40 border-red-800/40 text-red-300 hover:bg-red-900/50'
+                              }`}
+                            >
+                              {sec.emoji} {sec.nameJa}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      {selectedSabotageSection && (
+                        <div className="mt-1.5 text-[10px] text-red-400">
+                          工作先: {state.sections.find(s => s.id === selectedSabotageSection)?.nameJa} — 1ダメージ（発覚しない）
+                        </div>
                       )}
                     </div>
                   )}

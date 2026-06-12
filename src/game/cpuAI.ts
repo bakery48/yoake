@@ -125,7 +125,7 @@ export function traitorCpuMarkerTarget(state: GameState, bot: Player): SectionId
 export function traitorCpuAction(
   state: GameState,
   bot: Player,
-): { cardId: string; targetSection: SectionId } {
+): { cardId: string; targetSection: SectionId; sabotageSection?: SectionId } {
   const hand = bot.hand
   if (hand.length === 0) return { cardId: '', targetSection: 'gate' }
 
@@ -161,28 +161,31 @@ export function traitorCpuAction(
   }
 
   // Latent traitor: look innocent, avoid player-targeting cards
+  // Secretly sabotage the attack target (or most vulnerable section)
+  const sabotageSection: SectionId = state.attackTarget ?? vulnerable.id
+
   const cursedCard = hand.find((c) => c.type === 'cursed' && !needsPlayerTarget(c))
   if (cursedCard) {
     const decoy = aliveSections.find((s) => s.id !== (state.attackTarget ?? vulnerable.id)) ?? aliveSections[0]
-    return { cardId: cursedCard.id, targetSection: decoy.id }
+    return { cardId: cursedCard.id, targetSection: decoy.id, sabotageSection }
   }
 
   const repairCard = hand.find((c) => c.effect === 'repair')
   if (repairCard) {
     const healthiest = [...aliveSections].sort((a, b) => b.hp - a.hp)[0]
-    return { cardId: repairCard.id, targetSection: healthiest?.id ?? 'watchtower' }
+    return { cardId: repairCard.id, targetSection: healthiest?.id ?? 'watchtower', sabotageSection }
   }
 
   const sectionCard = bestSectionCard(hand)
-  if (sectionCard) return { cardId: sectionCard.id, targetSection: aliveSections[0]?.id ?? 'watchtower' }
+  if (sectionCard) return { cardId: sectionCard.id, targetSection: aliveSections[0]?.id ?? 'watchtower', sabotageSection }
 
   // Only player-targeting cards left
   for (const card of hand) {
     const pid = pickPlayerTarget(state, bot, card.effect)
-    if (pid) return { cardId: card.id, targetSection: pid as unknown as SectionId }
+    if (pid) return { cardId: card.id, targetSection: pid as unknown as SectionId, sabotageSection }
   }
 
-  return { cardId: hand[0].id, targetSection: aliveSections[0]?.id ?? 'watchtower' }
+  return { cardId: hand[0].id, targetSection: aliveSections[0]?.id ?? 'watchtower', sabotageSection }
 }
 
 export function shouldTransform(state: GameState, bot: Player): boolean {

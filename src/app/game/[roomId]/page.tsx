@@ -33,7 +33,7 @@ export default function GamePage() {
     <GameBoard
       state={gameState}
       onVote={(sectionId) => submitVote(roomId, sectionId)}
-      onAction={(cardId, targetSection) => submitAction(roomId, cardId, targetSection)}
+      onAction={(cardId, targetSection, sabotageSection) => submitAction(roomId, cardId, targetSection, sabotageSection)}
       onTransform={() => transform(roomId)}
       onLeave={() => { leaveRoom(roomId); router.push('/') }}
       onRematch={() => rematch(roomId)}
