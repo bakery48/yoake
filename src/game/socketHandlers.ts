@@ -117,6 +117,32 @@ function triggerCpuVotes(io: Server, roomId: string) {
   }
   rooms.set(roomId, current)
   broadcastGameState(io, current)
+
+  // All bots voted but allVoted wasn't reached inside the loop — check now
+  // (happens when human traitor already voted before this function ran)
+  const traitors = current.players.filter((p) => p.role === 'traitor')
+  const allNowVoted = traitors.every((p) => current.traitorVotesSubmitted.includes(p.id))
+  if (allNowVoted) {
+    schedulePhaseAdvance(io, roomId, 500, () => {
+      const s = rooms.get(roomId)!
+      if (s.phase !== 'traitor-voting') return
+      const resolved = resolveTraitorVoting(s)
+      rooms.set(roomId, resolved)
+      broadcastGameState(io, resolved)
+      if (resolved.phase === 'watchtower-reveal') {
+        schedulePhaseAdvance(io, roomId, 4000, () => {
+          const s2 = rooms.get(roomId)!
+          if (s2.phase !== 'watchtower-reveal') return
+          const advanced = advanceFromWatchtowerReveal(s2)
+          rooms.set(roomId, advanced)
+          broadcastGameState(io, advanced)
+          triggerCpuActions(io, roomId)
+        })
+      } else {
+        triggerCpuActions(io, roomId)
+      }
+    })
+  }
 }
 
 function triggerCpuActions(io: Server, roomId: string) {
