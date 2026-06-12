@@ -44,7 +44,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
   const isCapturedOrStunned = state.myPlayer.isCaptured || state.myPlayer.isStunned
 
   // Cards that target players (not sections)
-  const playerTargetEffects = ['encourage', 'capture', 'stun', 'escape', 'scout', 'forced_release']
+  const playerTargetEffects = ['encourage', 'capture', 'stun', 'escape', 'scout', 'release', 'forced_release']
   const selectedCard = state.myPlayer.hand.find((c) => c.id === selectedCardId)
   const needsPlayerTarget = selectedCard && playerTargetEffects.includes(selectedCard.effect)
 

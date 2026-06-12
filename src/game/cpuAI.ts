@@ -1,7 +1,7 @@
 import { GameState, SectionId, Player, Card, Section } from './types'
 
 // Cards that require a player ID as target (not a section)
-const PLAYER_TARGET_EFFECTS = new Set(['capture', 'stun', 'encourage', 'scout', 'escape', 'forced_release'])
+const PLAYER_TARGET_EFFECTS = new Set(['capture', 'stun', 'encourage', 'scout', 'escape', 'release', 'forced_release'])
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
