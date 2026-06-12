@@ -314,7 +314,9 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
                         <span className="text-amber-glow font-medium">{action.card.nameJa}</span>
                         <span className="text-gray-500 text-xs">→</span>
                         <span className="text-gray-400 text-xs">
-                          {sectionNames[action.targetSection] ?? action.targetSection}
+                          {sectionNames[action.targetSection] ??
+                            state.players.find((p) => p.id === action.targetSection)?.name ??
+                            action.targetSection}
                         </span>
                       </div>
                     )
