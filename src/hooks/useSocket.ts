@@ -1,49 +1,56 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { PlayerView, SectionId } from '@/game/types'
 
-// Module-level singletons so state survives page navigation
-let globalSocket: Socket | null = null
+interface RoomInfo {
+  roomId: string
+  playerCount: number
+  maxPlayers: number
+  hostName: string
+  started: boolean
+}
+
+// ─── Module-level singletons (survive page navigation) ────────────────────────
+
+let socket: Socket | null = null
 let globalGameState: PlayerView | null = null
 let globalConnected = false
 let globalRooms: RoomInfo[] = []
+let globalPendingRoomId: string | null = null
 const listeners = new Set<() => void>()
 
 function notify() {
   listeners.forEach((fn) => fn())
 }
 
-function getSocket(): Socket {
-  if (!globalSocket || !globalSocket.connected) {
-    globalSocket = io({ transports: ['websocket', 'polling'] })
+function initSocket(): Socket {
+  if (socket) return socket  // only ever create one
 
-    globalSocket.on('connect', () => {
-      globalConnected = true
-      notify()
-    })
-    globalSocket.on('disconnect', () => {
-      globalConnected = false
-      notify()
-    })
-    globalSocket.on('game:state', (state: PlayerView) => {
-      globalGameState = state
-      notify()
-    })
-    globalSocket.on('lobby:rooms', (list: RoomInfo[]) => {
-      globalRooms = list
-      notify()
-    })
-  }
-  return globalSocket
+  socket = io({ transports: ['websocket', 'polling'] })
+
+  socket.on('connect', () => { globalConnected = true; notify() })
+  socket.on('disconnect', () => { globalConnected = false; notify() })
+  socket.on('game:state', (state: PlayerView) => { globalGameState = state; notify() })
+  socket.on('lobby:rooms', (list: RoomInfo[]) => { globalRooms = list; notify() })
+  socket.on('lobby:created', ({ roomId }: { roomId: string }) => {
+    globalPendingRoomId = roomId; notify()
+  })
+  socket.on('lobby:joined', ({ roomId }: { roomId: string }) => {
+    globalPendingRoomId = roomId; notify()
+  })
+
+  return socket
 }
 
+// ─── Hook ──────────────────────────────────────────────────────────────────────
+
 export interface UseSocketReturn {
-  socket: Socket | null
   gameState: PlayerView | null
   error: string | null
   connected: boolean
+  pendingRoomId: string | null
   createRoom: (playerName: string) => void
   joinRoom: (roomId: string, playerName: string) => void
   startGame: (roomId: string) => void
@@ -57,16 +64,8 @@ export interface UseSocketReturn {
   rooms: RoomInfo[]
 }
 
-interface RoomInfo {
-  roomId: string
-  playerCount: number
-  maxPlayers: number
-  hostName: string
-  started: boolean
-}
-
 export function useSocket(): UseSocketReturn {
-  const socket = getSocket()
+  const s = initSocket()
   const [, rerender] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
@@ -75,64 +74,36 @@ export function useSocket(): UseSocketReturn {
     listeners.add(fn)
 
     const onError = (err: { message: string }) => setError(err.message)
-    socket.on('error', onError)
+    s.on('error', onError)
 
-    if (socket.connected) {
+    // Sync connected state in case socket was already connected on mount
+    if (s.connected && !globalConnected) {
       globalConnected = true
       rerender((n) => n + 1)
     }
 
     return () => {
       listeners.delete(fn)
-      socket.off('error', onError)
+      s.off('error', onError)
     }
-  }, [socket])
+  }, [s])
 
-  const createRoom = useCallback((playerName: string) => {
-    socket.emit('lobby:create', { playerName })
-  }, [socket])
-
-  const joinRoom = useCallback((roomId: string, playerName: string) => {
-    socket.emit('lobby:join', { roomId, playerName })
-  }, [socket])
-
-  const startGame = useCallback((roomId: string) => {
-    socket.emit('game:start', { roomId })
-  }, [socket])
-
-  const submitVote = useCallback((roomId: string, targetSection: SectionId) => {
-    socket.emit('traitor:vote', { roomId, targetSection })
-  }, [socket])
-
-  const submitAction = useCallback((roomId: string, cardId: string, targetSection: SectionId) => {
-    socket.emit('action:submit', { roomId, cardId, targetSection })
-  }, [socket])
-
-  const transform = useCallback((roomId: string) => {
-    socket.emit('player:transform', { roomId })
-  }, [socket])
-
-  const listRooms = useCallback(() => {
-    socket.emit('lobby:list')
-  }, [socket])
-
-  const addCpu = useCallback((roomId: string) => {
-    socket.emit('lobby:add_cpu', { roomId })
-  }, [socket])
-
-  const removeCpu = useCallback((roomId: string, cpuId: string) => {
-    socket.emit('lobby:remove_cpu', { roomId, cpuId })
-  }, [socket])
-
-  const setRole = useCallback((roomId: string, role: 'defender' | 'traitor' | null) => {
-    socket.emit('lobby:set_role', { roomId, role })
-  }, [socket])
+  const createRoom  = useCallback((playerName: string) => s.emit('lobby:create', { playerName }), [s])
+  const joinRoom    = useCallback((roomId: string, playerName: string) => s.emit('lobby:join', { roomId, playerName }), [s])
+  const startGame   = useCallback((roomId: string) => s.emit('game:start', { roomId }), [s])
+  const submitVote  = useCallback((roomId: string, t: SectionId) => s.emit('traitor:vote', { roomId, targetSection: t }), [s])
+  const submitAction = useCallback((roomId: string, cardId: string, t: SectionId) => s.emit('action:submit', { roomId, cardId, targetSection: t }), [s])
+  const transform   = useCallback((roomId: string) => s.emit('player:transform', { roomId }), [s])
+  const listRooms   = useCallback(() => s.emit('lobby:list'), [s])
+  const addCpu      = useCallback((roomId: string) => s.emit('lobby:add_cpu', { roomId }), [s])
+  const removeCpu   = useCallback((roomId: string, cpuId: string) => s.emit('lobby:remove_cpu', { roomId, cpuId }), [s])
+  const setRole     = useCallback((roomId: string, role: 'defender' | 'traitor' | null) => s.emit('lobby:set_role', { roomId, role }), [s])
 
   return {
-    socket,
     gameState: globalGameState,
     error,
     connected: globalConnected,
+    pendingRoomId: globalPendingRoomId,
     createRoom,
     joinRoom,
     startGame,

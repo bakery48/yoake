@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSocket } from '@/hooks/useSocket'
 import Lobby from '@/components/Lobby'
@@ -11,6 +11,7 @@ export default function Home() {
     gameState,
     error,
     connected,
+    pendingRoomId,
     createRoom,
     joinRoom,
     startGame,
@@ -19,37 +20,15 @@ export default function Home() {
     removeCpu,
     setRole,
     rooms,
-    socket,
   } = useSocket()
 
-  const [pendingRoomId, setPendingRoomId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!socket) return
-
-    const onCreated = ({ roomId }: { roomId: string }) => {
-      setPendingRoomId(roomId)
-    }
-
-    const onJoined = ({ roomId }: { roomId: string }) => {
-      setPendingRoomId(roomId)
-    }
-
-    socket.on('lobby:created', onCreated)
-    socket.on('lobby:joined', onJoined)
-
-    return () => {
-      socket.off('lobby:created', onCreated)
-      socket.off('lobby:joined', onJoined)
-    }
-  }, [socket])
-
+  // Navigate to game when game starts for our room
   useEffect(() => {
     if (
       gameState &&
       gameState.phase !== 'lobby' &&
       pendingRoomId &&
-      gameState.roomId === pendingRoomId  // stale state from previous game must not trigger
+      gameState.roomId === pendingRoomId
     ) {
       router.push(`/game/${pendingRoomId}`)
     }
