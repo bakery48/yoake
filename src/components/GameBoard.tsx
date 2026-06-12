@@ -46,7 +46,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
   // Cards that target players (not sections)
   const playerTargetEffects = ['encourage', 'capture', 'stun', 'escape', 'scout', 'release', 'forced_release']
   // Cards that require no target (self-affecting)
-  const selfTargetEffects = ['conscription']
+  const selfTargetEffects = ['conscription', 'invisible', 'rampage']
   const selectedCard = state.myPlayer.hand.find((c) => c.id === selectedCardId)
   const needsPlayerTarget = selectedCard && playerTargetEffects.includes(selectedCard.effect)
   const isSelfTarget = selectedCard && selfTargetEffects.includes(selectedCard.effect)
