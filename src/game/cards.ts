@@ -187,7 +187,9 @@ export function buildDeck(playerCount: number): Card[] {
 export function buildTransformationDeck(): Card[] {
   const deck: Card[] = []
   for (const template of TRANSFORMATION_CARDS) {
-    for (let i = 0; i < 3; i++) deck.push(instantiate(template))
+    // breath is the basic traitor action — appears twice as often
+    const count = template.effect === 'breath' ? 6 : 3
+    for (let i = 0; i < count; i++) deck.push(instantiate(template))
   }
   return shuffle(deck)
 }
