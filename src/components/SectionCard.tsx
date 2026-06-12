@@ -56,14 +56,14 @@ export default function SectionCard({
       disabled={!selectable || section.isCollapsed}
       className={`
         relative flex flex-col bg-stone-900/90 border-2 rounded-lg overflow-hidden
-        text-left transition-all duration-200 w-[120px]
+        text-left transition-all duration-200 w-[160px]
         ${borderColor}
         ${selectable && !section.isCollapsed ? 'cursor-pointer hover:scale-105 hover:brightness-110' : 'cursor-default'}
         ${section.isCollapsed ? 'opacity-40 grayscale' : ''}
       `}
     >
       {/* Section illustration */}
-      <div className="relative w-full h-[90px] bg-stone-800 flex items-center justify-center overflow-hidden">
+      <div className="relative w-full h-[120px] bg-stone-800 flex items-center justify-center overflow-hidden">
         <Image
           src={SECTION_IMAGES[section.id]}
           alt={section.nameJa}
@@ -104,7 +104,7 @@ export default function SectionCard({
         {/* Name */}
         <div className="flex items-center gap-1">
           <span className="text-sm">{section.emoji}</span>
-          <span className="text-xs font-bold text-stone-100 leading-tight">{section.nameJa}</span>
+          <span className="text-sm font-bold text-stone-100 leading-tight">{section.nameJa}</span>
         </div>
 
         {/* Bonus description */}
@@ -114,7 +114,7 @@ export default function SectionCard({
 
         {/* HP bar */}
         <div>
-          <div className="flex justify-between text-[10px] text-stone-400 mb-0.5">
+          <div className="flex justify-between text-xs text-stone-400 mb-0.5">
             <span>耐久度</span>
             <span>{section.isCollapsed ? '0' : section.hp}/{section.maxHp}</span>
           </div>

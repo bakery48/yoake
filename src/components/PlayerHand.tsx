@@ -48,7 +48,7 @@ function CardItem({ card, isSelected, onSelect, disabled }: CardItemProps) {
       onClick={onSelect}
       disabled={disabled}
       className={`
-        relative flex flex-col rounded-2xl border-2 text-left transition-all duration-200 w-[120px]
+        relative flex flex-col rounded-2xl border-2 text-left transition-all duration-200 w-[150px]
         bg-[#1a1a2e]
         ${CARD_BORDER[card.type]}
         ${isSelected ? 'border-amber-glow shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105 -translate-y-2' : ''}
@@ -69,11 +69,11 @@ function CardItem({ card, isSelected, onSelect, disabled }: CardItemProps) {
 
       {/* Card info */}
       <div className="p-2 pt-1.5">
-        <div className={`text-[9px] font-bold mb-0.5 ${CARD_TYPE_LABEL_COLOR[card.type]}`}>
+        <div className={`text-[10px] font-bold mb-0.5 ${CARD_TYPE_LABEL_COLOR[card.type]}`}>
           {CARD_TYPE_LABEL[card.type]}
         </div>
-        <div className="text-xs font-bold text-white leading-tight mb-1">{card.nameJa}</div>
-        <div className="text-[9px] text-gray-400 leading-snug">{card.descriptionJa}</div>
+        <div className="text-sm font-bold text-white leading-tight mb-1">{card.nameJa}</div>
+        <div className="text-[10px] text-gray-400 leading-snug">{card.descriptionJa}</div>
       </div>
 
       {isSelected && (
