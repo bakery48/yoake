@@ -11,12 +11,6 @@ interface Props {
   canPlay: boolean
 }
 
-const CARD_TYPE_STYLE: Record<string, string> = {
-  defense: 'border-blue-500/60 bg-blue-950/40',
-  cursed: 'border-purple-500/60 bg-purple-950/40',
-  transformation: 'border-red-500/60 bg-red-950/40',
-}
-
 const CARD_TYPE_LABEL: Record<string, string> = {
   defense: '防衛',
   cursed: '呪い',
@@ -27,6 +21,18 @@ const CARD_TYPE_LABEL_COLOR: Record<string, string> = {
   defense: 'text-blue-400',
   cursed: 'text-purple-400',
   transformation: 'text-red-400',
+}
+
+const CARD_IMAGE_BG: Record<string, string> = {
+  defense: 'bg-blue-900/70',
+  cursed: 'bg-purple-900/70',
+  transformation: 'bg-red-900/70',
+}
+
+const CARD_BORDER: Record<string, string> = {
+  defense: 'border-blue-500/60',
+  cursed: 'border-purple-500/60',
+  transformation: 'border-red-500/60',
 }
 
 interface CardItemProps {
@@ -42,17 +48,28 @@ function CardItem({ card, isSelected, onSelect, disabled }: CardItemProps) {
       onClick={onSelect}
       disabled={disabled}
       className={`
-        relative flex flex-col rounded-xl border-2 p-3 text-left transition-all duration-200 min-w-[120px] max-w-[140px]
-        ${CARD_TYPE_STYLE[card.type]}
-        ${isSelected ? 'border-amber-glow shadow-amber-glow/50 shadow-lg scale-105 -translate-y-2' : ''}
+        relative flex flex-col rounded-2xl border-2 text-left transition-all duration-200 w-[120px]
+        bg-[#1a1a2e]
+        ${CARD_BORDER[card.type]}
+        ${isSelected ? 'border-amber-glow shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105 -translate-y-2' : ''}
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 hover:-translate-y-1'}
       `}
     >
-      <div className={`text-[10px] font-bold mb-1 ${CARD_TYPE_LABEL_COLOR[card.type]}`}>
-        {CARD_TYPE_LABEL[card.type]}
+      {/* Artwork area with bezel padding */}
+      <div className="p-2 pb-0">
+        <div className={`w-full rounded-xl overflow-hidden ${CARD_IMAGE_BG[card.type]} flex items-center justify-center`} style={{ aspectRatio: '4/3' }}>
+          <span className="text-gray-500 text-xs">絵</span>
+        </div>
       </div>
-      <div className="text-sm font-bold text-white leading-tight mb-1">{card.nameJa}</div>
-      <div className="text-[10px] text-gray-400 leading-snug">{card.descriptionJa}</div>
+
+      {/* Card info */}
+      <div className="p-2 pt-1.5">
+        <div className={`text-[9px] font-bold mb-0.5 ${CARD_TYPE_LABEL_COLOR[card.type]}`}>
+          {CARD_TYPE_LABEL[card.type]}
+        </div>
+        <div className="text-xs font-bold text-white leading-tight mb-1">{card.nameJa}</div>
+        <div className="text-[9px] text-gray-400 leading-snug">{card.descriptionJa}</div>
+      </div>
 
       {isSelected && (
         <div className="absolute -top-2 -right-2 w-5 h-5 bg-amber-glow rounded-full flex items-center justify-center text-black text-xs font-bold">
