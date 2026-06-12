@@ -718,17 +718,31 @@ export function resolveDraw(state: GameState): GameState {
     return deck.shift() ?? null
   }
 
+  let traitorDeck = shuffle(buildTransformationDeck())
+
+  function drawTraitorCard(): Card {
+    if (traitorDeck.length === 0) traitorDeck = shuffle(buildTransformationDeck())
+    return traitorDeck.shift()!
+  }
+
   const players = state.players.map((p) => {
     // Carryover limit
     const carryoverLimit = p.noCarryoverNextTurn ? 0 : armoryBonus ? 2 : 1
-    const keptCards = p.hand.slice(0, carryoverLimit)
-    discard.push(...p.hand.slice(carryoverLimit))
+    const keptCards = p.isTransformed
+      ? p.hand.slice(0, carryoverLimit).filter((c) => c.type === 'transformation' || c.type === 'cursed')
+      : p.hand.slice(0, carryoverLimit)
+    if (p.isTransformed) {
+      // discard non-transformation cards that slipped in
+      discard.push(...p.hand.filter((c) => c.type !== 'transformation' && c.type !== 'cursed'))
+    } else {
+      discard.push(...p.hand.slice(carryoverLimit))
+    }
 
     // Draw 1 card (captured/stunned players still draw)
     const drawCount = p.encouragedNextTurn ? 2 : 1
     const drawn: Card[] = []
     for (let i = 0; i < drawCount; i++) {
-      const card = drawCard()
+      const card = p.isTransformed ? drawTraitorCard() : drawCard()
       if (card) drawn.push(card)
     }
 
