@@ -371,7 +371,13 @@ export function autoSkipPlayer(
 
 /** Resolve immediate effects of all played cards */
 export function resolveImmediateEffects(state: GameState): GameState {
-  let s = { ...state, sections: state.sections.map(sec => ({ ...sec })), transformAnnouncement: null }
+  // Detect if any player just revealed a transformation card (traitor going public)
+  const newlyRevealed = Object.entries(state.playedCards).find(([, action]) => action.card.type === 'transformation')
+  const announcement = newlyRevealed
+    ? (state.players.find((p) => p.id === newlyRevealed[0])?.name ?? null)
+    : null
+
+  let s = { ...state, sections: state.sections.map(sec => ({ ...sec })), transformAnnouncement: announcement }
   s.players = s.players.map(p => ({ ...p }))
 
   const log: string[] = [...s.log]
@@ -842,7 +848,6 @@ export function transformPlayer(state: GameState, playerId: string): GameState {
     ...state,
     players,
     log: [...state.log, `💀 ${player.name} が変身した！`],
-    transformAnnouncement: player.name,
   }
 }
 
