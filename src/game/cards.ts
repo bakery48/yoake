@@ -48,10 +48,10 @@ export const DEFENSE_CARDS: Omit<Card, 'id'>[] = [
   },
   {
     name: 'Release',
-    nameJa: '解除',
+    nameJa: '解放',
     type: 'defense',
-    description: 'Free 1 captured player OR remove 1 marker',
-    descriptionJa: '拘束中のプレイヤー1人を解放、またはマーカー1つを除去する',
+    description: 'Free 1 captured player',
+    descriptionJa: '拘束中のプレイヤー1人を解放する',
     effect: 'release',
   },
 ]
@@ -121,7 +121,7 @@ export const TRANSFORMATION_CARDS: Omit<Card, 'id'>[] = [
     nameJa: 'スタン',
     type: 'transformation',
     description: 'Restrict 1 defender for 1 turn (capture/release cards only)',
-    descriptionJa: '防衛者1人を1ターン制限する（捕縛/解除カードのみ使用可）',
+    descriptionJa: '防衛者1人を1ターン制限する（捕縛/解放カードのみ使用可）',
     effect: 'stun',
   },
   {

@@ -279,7 +279,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
               {isCapturedOrStunned && (
                 <div className="text-xs text-yellow-400 text-center">
                   {state.myPlayer.isCaptured ? '⛓ 拘束中' : '⚡ スタン中'}
-                  — 捕縛/解除/エスケープ/力任せの解放のみ使用可
+                  — 捕縛/解放/エスケープ/力任せの解放のみ使用可
                 </div>
               )}
             </div>

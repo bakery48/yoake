@@ -430,21 +430,12 @@ export function resolveImmediateEffects(state: GameState): GameState {
         break
       }
       case 'release': {
-        // targetSection here is used as "release mode" — we just release the first captured
         const capturedPlayer = s.players.find(p => p.isCaptured)
         if (capturedPlayer) {
           s.players = s.players.map(p =>
             p.id === capturedPlayer.id ? { ...p, isCaptured: false, capturedTurnsLeft: 0 } : p,
           )
           log.push(`🔓 ${playerName} が ${capturedPlayer.name} を解放した`)
-        } else {
-          // Remove first marker on target section
-          s.sections = s.sections.map(sec =>
-            sec.id === targetSection && sec.markers.length > 0
-              ? { ...sec, markers: sec.markers.slice(1) }
-              : sec,
-          )
-          log.push(`🔓 ${playerName} がマーカーを除去した`)
         }
         break
       }
