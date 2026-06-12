@@ -402,10 +402,7 @@ export function resolveImmediateEffects(state: GameState): GameState {
           log.push(`🚫 ${playerName} の修復は無効化されています`)
           break
         }
-        // Armory bonus
-        const armory = s.sections.find(s => s.id === 'armory')!
-        const bonus = (armory.bonusActive && !armory.isCollapsed) ? 1 : 0
-        const heal = 2 + bonus
+        const heal = 2
         s.sections = s.sections.map(sec =>
           sec.id === targetSection
             ? { ...sec, hp: Math.min(sec.hp + heal, sec.maxHp) }
