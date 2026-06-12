@@ -482,7 +482,7 @@ export function resolveImmediateEffects(state: GameState): GameState {
             ? { ...sec, hp: Math.min(sec.hp + 3, sec.maxHp), repairDisabledNextRound: true }
             : sec,
         )
-        log.push(`⚠️ ${playerName} が ${secDef.nameJa} に応急修復（+3HP、次ターン修復不可）`)
+        log.push(`⚠️ ${playerName} が ${secDef.nameJa} に応急修復（+3耐久度、次ターン修復不可）`)
         break
       }
       case 'emergency_lockdown': {
@@ -526,7 +526,7 @@ export function resolveImmediateEffects(state: GameState): GameState {
         s.sections = s.sections.map(sec =>
           sec.id === targetSection ? { ...sec, hp: Math.max(0, sec.hp - 3) } : sec,
         )
-        log.push(`💨 ${playerName} がブレスを発動！${secDef.nameJa} -3HP`)
+        log.push(`💨 ${playerName} がブレスを発動！${secDef.nameJa} -3耐久度`)
         break
       }
       case 'crack': {
@@ -535,7 +535,7 @@ export function resolveImmediateEffects(state: GameState): GameState {
             ? { ...sec, maxHp: Math.max(1, sec.maxHp - 1), hp: Math.min(sec.hp, sec.maxHp - 1) }
             : sec,
         )
-        log.push(`💥 ${playerName} がクラックを発動！${secDef.nameJa} の最大HP永続-1`)
+        log.push(`💥 ${playerName} がクラックを発動！${secDef.nameJa} の最大耐久度永続-1`)
         break
       }
       case 'stun': {
@@ -625,7 +625,7 @@ export function resolveEnemyAttack(state: GameState): GameState {
     damage = Math.floor(damage * 1.5)
   }
 
-  // Gate bonus: -1 if Gate is at max HP
+  // Gate bonus: -1 if Gate is at max 耐久度
   const gate = state.sections.find((s) => s.id === 'gate')!
   if (gate.bonusActive && !gate.isCollapsed) {
     damage = Math.max(0, damage - 1)
@@ -669,7 +669,7 @@ export function resolveEnemyAttack(state: GameState): GameState {
     return sec
   })
 
-  // Barracks bonus: auto HP+1 to lowest HP section
+  // Barracks bonus: auto 耐久度+1 to lowest HP section
   const barracks = sections.find((s) => s.id === 'barracks')!
   if (barracks.bonusActive && !barracks.isCollapsed) {
     const alive = sections.filter((s) => !s.isCollapsed).sort((a, b) => a.hp - b.hp)
@@ -680,7 +680,7 @@ export function resolveEnemyAttack(state: GameState): GameState {
           ? { ...sec, hp: Math.min(sec.hp + 1, sec.maxHp), bonusActive: (sec.hp + 1) >= sec.maxHp }
           : sec,
       )
-      log.push(`🏥 兵舎ボーナス：${sections.find(s => s.id === lowestId)?.nameJa} +1HP`)
+      log.push(`🏥 兵舎ボーナス：${sections.find(s => s.id === lowestId)?.nameJa} +1耐久度`)
     }
   }
 

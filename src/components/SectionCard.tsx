@@ -14,7 +14,7 @@ const BONUS_DESC: Record<SectionId, string> = {
   watchtower: '攻撃目標を開示',
   gate:       'ダメージ-1',
   armory:     '持ち越し+1',
-  barracks:   '毎ラウンド最低HPに+1',
+  barracks:   '毎ラウンド最低耐久度に+1',
 }
 
 interface Props {
@@ -115,7 +115,7 @@ export default function SectionCard({
         {/* HP bar */}
         <div>
           <div className="flex justify-between text-[10px] text-stone-400 mb-0.5">
-            <span>HP</span>
+            <span>耐久度</span>
             <span>{section.isCollapsed ? '0' : section.hp}/{section.maxHp}</span>
           </div>
           <div className="w-full bg-stone-700 rounded-full h-1.5">

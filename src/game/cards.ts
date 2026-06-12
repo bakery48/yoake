@@ -11,7 +11,7 @@ export const DEFENSE_CARDS: Omit<Card, 'id'>[] = [
     nameJa: '修復',
     type: 'defense',
     description: 'Target section HP +2',
-    descriptionJa: '対象セクションHP+2',
+    descriptionJa: '対象セクション耐久度+2',
     effect: 'repair',
   },
   {
@@ -62,7 +62,7 @@ export const CURSED_CARDS: Omit<Card, 'id'>[] = [
     nameJa: '応急修復',
     type: 'cursed',
     description: 'Immediate HP+3, but next turn repair cards disabled on same section',
-    descriptionJa: '即座にHP+3、ただし次のターンその同じセクションへの修復カードが無効になる',
+    descriptionJa: '即座に耐久度+3、ただし次のターンその同じセクションへの修復カードが無効になる',
     effect: 'emergency_repair',
   },
   {
@@ -97,7 +97,7 @@ export const TRANSFORMATION_CARDS: Omit<Card, 'id'>[] = [
     nameJa: 'ブレス',
     type: 'transformation',
     description: 'Target section HP -3',
-    descriptionJa: '対象セクションHP-3',
+    descriptionJa: '対象セクション耐久度-3',
     effect: 'breath',
   },
   {
@@ -105,7 +105,7 @@ export const TRANSFORMATION_CARDS: Omit<Card, 'id'>[] = [
     nameJa: 'クラック',
     type: 'transformation',
     description: 'Permanently reduce target section max HP by 1',
-    descriptionJa: '対象セクションの最大HPを永続的に1減少させる',
+    descriptionJa: '対象セクションの最大耐久度を永続的に1減少させる',
     effect: 'crack',
   },
   {
