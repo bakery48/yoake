@@ -167,6 +167,8 @@ export function buildDeck(playerCount: number): Card[] {
   const perDefense = Math.ceil(defenseTarget / DEFENSE_CARDS.length)
   for (const template of DEFENSE_CARDS) {
     let count = perDefense
+    // repair is the basic action — appears twice as often
+    if (template.effect === 'repair') count = perDefense * 2
     // capture is rare
     if (template.effect === 'capture') count = Math.max(1, Math.floor(perDefense / 3))
     for (let i = 0; i < count; i++) deck.push(instantiate(template))
