@@ -59,48 +59,50 @@ export default function SectionCard({
       onClick={onClick}
       disabled={!selectable || section.isCollapsed}
       className={`
-        relative flex flex-col bg-stone-900/90 border-2 rounded-lg overflow-hidden
+        relative flex flex-col bg-stone-900/90 border-2 rounded-2xl
         text-left transition-all duration-200 w-[160px]
         ${borderColor}
         ${selectable && !section.isCollapsed ? 'cursor-pointer hover:scale-105 hover:brightness-110' : 'cursor-default'}
         ${section.isCollapsed ? 'opacity-40 grayscale' : ''}
       `}
     >
-      {/* Section illustration */}
-      <div className="relative w-full h-[120px] bg-stone-800 flex items-center justify-center overflow-hidden">
-        <Image
-          src={SECTION_IMAGES[section.id]}
-          alt={section.nameJa}
-          fill
-          className="object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-        />
-        {/* Fallback emoji */}
-        <span className="text-4xl opacity-40 select-none">{section.emoji}</span>
+      {/* Section illustration — bezel style matching hand cards */}
+      <div className="p-2 pb-0">
+        <div className="relative w-full rounded-xl overflow-hidden bg-stone-800" style={{ aspectRatio: '4/3' }}>
+          <Image
+            src={SECTION_IMAGES[section.id]}
+            alt={section.nameJa}
+            fill
+            className="object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+          />
+          {/* Fallback emoji */}
+          <span className="absolute inset-0 flex items-center justify-center text-4xl opacity-30 select-none">{section.emoji}</span>
 
-        {/* Attack target red vignette */}
-        {isAttackTarget && (
-          <div className="absolute inset-0 bg-red-600/30 animate-pulse" />
-        )}
+          {/* Attack target red vignette */}
+          {isAttackTarget && (
+            <div className="absolute inset-0 bg-red-600/30 animate-pulse" />
+          )}
 
-        {/* Collapsed overlay */}
-        {section.isCollapsed && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
-            <span className="text-red-400 font-bold text-sm tracking-widest">崩壊</span>
-          </div>
-        )}
+          {/* Collapsed overlay */}
+          {section.isCollapsed && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
+              <span className="text-red-400 font-bold text-sm tracking-widest">崩壊</span>
+            </div>
+          )}
 
-        {/* Fortified shield */}
-        {section.fortified && !section.isCollapsed && (
-          <div className="absolute top-1 right-1 text-base drop-shadow">🛡️</div>
-        )}
+          {/* Fortified shield */}
+          {section.fortified && !section.isCollapsed && (
+            <div className="absolute top-1 right-1 text-base drop-shadow z-10">🛡️</div>
+          )}
 
-        {/* MAX bonus badge */}
-        {section.bonusActive && !section.isCollapsed && (
-          <div className="absolute top-1 left-1 bg-teal-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold leading-none">
-            MAX
-          </div>
-        )}
+          {/* MAX bonus badge */}
+          {section.bonusActive && !section.isCollapsed && (
+            <div className="absolute top-1 left-1 bg-teal-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold leading-none z-10">
+              MAX
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Info area */}
