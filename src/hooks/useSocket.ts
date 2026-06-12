@@ -4,12 +4,36 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { PlayerView, SectionId } from '@/game/types'
 
+// Module-level singletons so state survives page navigation
 let globalSocket: Socket | null = null
+let globalGameState: PlayerView | null = null
+let globalConnected = false
+let globalRooms: RoomInfo[] = []
+const listeners = new Set<() => void>()
+
+function notify() {
+  listeners.forEach((fn) => fn())
+}
 
 function getSocket(): Socket {
   if (!globalSocket || !globalSocket.connected) {
-    globalSocket = io({
-      transports: ['websocket', 'polling'],
+    globalSocket = io({ transports: ['websocket', 'polling'] })
+
+    globalSocket.on('connect', () => {
+      globalConnected = true
+      notify()
+    })
+    globalSocket.on('disconnect', () => {
+      globalConnected = false
+      notify()
+    })
+    globalSocket.on('game:state', (state: PlayerView) => {
+      globalGameState = state
+      notify()
+    })
+    globalSocket.on('lobby:rooms', (list: RoomInfo[]) => {
+      globalRooms = list
+      notify()
     })
   }
   return globalSocket
@@ -42,84 +66,73 @@ interface RoomInfo {
 }
 
 export function useSocket(): UseSocketReturn {
-  const [gameState, setGameState] = useState<PlayerView | null>(null)
+  const socket = getSocket()
+  const [, rerender] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [connected, setConnected] = useState(false)
-  const [rooms, setRooms] = useState<RoomInfo[]>([])
-  const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
-    const socket = getSocket()
-    socketRef.current = socket
+    const fn = () => rerender((n) => n + 1)
+    listeners.add(fn)
 
-    const onConnect = () => setConnected(true)
-    const onDisconnect = () => setConnected(false)
-    const onGameState = (state: PlayerView) => setGameState(state)
     const onError = (err: { message: string }) => setError(err.message)
-    const onRooms = (list: RoomInfo[]) => setRooms(list)
-
-    socket.on('connect', onConnect)
-    socket.on('disconnect', onDisconnect)
-    socket.on('game:state', onGameState)
     socket.on('error', onError)
-    socket.on('lobby:rooms', onRooms)
 
-    if (socket.connected) setConnected(true)
+    if (socket.connected) {
+      globalConnected = true
+      rerender((n) => n + 1)
+    }
 
     return () => {
-      socket.off('connect', onConnect)
-      socket.off('disconnect', onDisconnect)
-      socket.off('game:state', onGameState)
+      listeners.delete(fn)
       socket.off('error', onError)
-      socket.off('lobby:rooms', onRooms)
     }
-  }, [])
+  }, [socket])
 
   const createRoom = useCallback((playerName: string) => {
-    socketRef.current?.emit('lobby:create', { playerName })
-  }, [])
+    socket.emit('lobby:create', { playerName })
+  }, [socket])
 
   const joinRoom = useCallback((roomId: string, playerName: string) => {
-    socketRef.current?.emit('lobby:join', { roomId, playerName })
-  }, [])
+    socket.emit('lobby:join', { roomId, playerName })
+  }, [socket])
 
   const startGame = useCallback((roomId: string) => {
-    socketRef.current?.emit('game:start', { roomId })
-  }, [])
+    socket.emit('game:start', { roomId })
+  }, [socket])
 
   const submitVote = useCallback((roomId: string, targetSection: SectionId) => {
-    socketRef.current?.emit('traitor:vote', { roomId, targetSection })
-  }, [])
+    socket.emit('traitor:vote', { roomId, targetSection })
+  }, [socket])
 
   const submitAction = useCallback((roomId: string, cardId: string, targetSection: SectionId) => {
-    socketRef.current?.emit('action:submit', { roomId, cardId, targetSection })
-  }, [])
+    socket.emit('action:submit', { roomId, cardId, targetSection })
+  }, [socket])
 
   const transform = useCallback((roomId: string) => {
-    socketRef.current?.emit('player:transform', { roomId })
-  }, [])
+    socket.emit('player:transform', { roomId })
+  }, [socket])
 
   const listRooms = useCallback(() => {
-    socketRef.current?.emit('lobby:list')
-  }, [])
+    socket.emit('lobby:list')
+  }, [socket])
 
   const addCpu = useCallback((roomId: string) => {
-    socketRef.current?.emit('lobby:add_cpu', { roomId })
-  }, [])
+    socket.emit('lobby:add_cpu', { roomId })
+  }, [socket])
 
   const removeCpu = useCallback((roomId: string, cpuId: string) => {
-    socketRef.current?.emit('lobby:remove_cpu', { roomId, cpuId })
-  }, [])
+    socket.emit('lobby:remove_cpu', { roomId, cpuId })
+  }, [socket])
 
   const setRole = useCallback((roomId: string, role: 'defender' | 'traitor' | null) => {
-    socketRef.current?.emit('lobby:set_role', { roomId, role })
-  }, [])
+    socket.emit('lobby:set_role', { roomId, role })
+  }, [socket])
 
   return {
-    socket: socketRef.current,
-    gameState,
+    socket,
+    gameState: globalGameState,
     error,
-    connected,
+    connected: globalConnected,
     createRoom,
     joinRoom,
     startGame,
@@ -130,6 +143,6 @@ export function useSocket(): UseSocketReturn {
     addCpu,
     removeCpu,
     setRole,
-    rooms,
+    rooms: globalRooms,
   }
 }
