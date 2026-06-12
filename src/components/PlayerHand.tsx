@@ -57,8 +57,13 @@ function CardItem({ card, isSelected, onSelect, disabled }: CardItemProps) {
     >
       {/* Artwork area with bezel padding */}
       <div className="p-2 pb-0">
-        <div className={`w-full rounded-xl overflow-hidden ${CARD_IMAGE_BG[card.type]} flex items-center justify-center`} style={{ aspectRatio: '4/3' }}>
-          <span className="text-gray-500 text-xs">絵</span>
+        <div className={`w-full rounded-xl overflow-hidden ${CARD_IMAGE_BG[card.type]}`} style={{ aspectRatio: '4/3' }}>
+          <img
+            src={`/cards/${card.effect}.png`}
+            alt={card.nameJa}
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+          />
         </div>
       </div>
 

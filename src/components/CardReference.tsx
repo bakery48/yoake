@@ -79,10 +79,15 @@ export default function CardReference() {
                         {/* Artwork with bezel */}
                         <div className="p-2 pb-0">
                           <div
-                            className={`w-full rounded-xl ${section.imageBg} flex items-center justify-center`}
+                            className={`w-full rounded-xl overflow-hidden ${section.imageBg}`}
                             style={{ aspectRatio: '4/3' }}
                           >
-                            <span className="text-gray-500 text-xs">絵</span>
+                            <img
+                              src={`/cards/${card.effect}.png`}
+                              alt={card.nameJa}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                            />
                           </div>
                         </div>
                         {/* Info */}
