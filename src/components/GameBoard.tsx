@@ -253,6 +253,17 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
           {/* Action phase: hand + section selection */}
           {state.phase === 'action' && !winner && (
             <div className="space-y-4">
+              {state.attackTarget && state.predictedAttackDamage !== null && (
+                <div className="bg-red-950/40 border border-red-800/50 rounded-xl px-3 py-2 flex items-center justify-between text-sm">
+                  <span className="text-red-400">
+                    ⚔️ 次の敵襲 → <span className="font-bold text-white">{sectionNames[state.attackTarget]}</span>
+                  </span>
+                  <span className="text-red-300 font-bold">
+                    予想ダメージ <span className="text-red-400 text-base">{state.predictedAttackDamage}</span>
+                    <span className="text-xs text-gray-500 ml-1">※カード効果前</span>
+                  </span>
+                </div>
+              )}
               <PlayerHand
                 hand={state.myPlayer.hand}
                 selectedCardId={selectedCardId}

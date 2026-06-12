@@ -204,7 +204,20 @@ export function buildPlayerView(state: GameState, playerId: string): PlayerView 
     hostId: state.hostId,
     traitorVotesSubmitted: state.traitorVotesSubmitted,
     transformAnnouncement: state.transformAnnouncement ?? null,
+    predictedAttackDamage: computePredictedDamage(state),
   }
+}
+
+function computePredictedDamage(state: GameState): number | null {
+  if (!state.attackTarget) return null
+  const target = state.sections.find((s) => s.id === state.attackTarget)
+  if (!target || target.isCollapsed) return null
+  let dmg = baseEnemyDamage(state.round)
+  dmg += target.markers.filter((m) => m.type === 'damage').length
+  const gate = state.sections.find((s) => s.id === 'gate')!
+  if (gate.bonusActive && !gate.isCollapsed) dmg = Math.max(0, dmg - 1)
+  if (target.doubleDamageNextRound) dmg = dmg * 2
+  return dmg
 }
 
 // ─── Phase Transitions ────────────────────────────────────────────────────────
