@@ -3,10 +3,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { PlayerView, SectionId, GamePhase } from '@/game/types'
 import FortressMap from './FortressMap'
+import SectionCard from './SectionCard'
 import CardReference from './CardReference'
 import PlayerHand from './PlayerHand'
 import PlayerList from './PlayerList'
 import PhaseIndicator from './PhaseIndicator'
+
+const SECTION_ORDER: SectionId[] = ['watchtower', 'gate', 'armory', 'barracks']
 
 interface Props {
   state: PlayerView
@@ -189,31 +192,45 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden gap-0">
-        {/* Left: Sections + Action area */}
+        {/* Center: Map → Sections → Hand */}
         <div className="flex flex-col flex-1 overflow-y-auto p-4 gap-4">
-          {/* Fortress map with section overlays */}
-          <FortressMap
-            sections={state.sections}
-            attackTarget={state.attackTarget}
-            selectedSection={selectedSection}
-            showAttackTarget={
+          {/* Fortress map (background only) */}
+          <FortressMap className="h-32 flex-shrink-0" />
+
+          {/* Section cards row */}
+          {(() => {
+            const selectable =
+              (state.phase === 'action' && !needsPlayerTarget && !actionSubmitted) ||
+              (isTraitor && state.phase === 'traitor-voting' && !voteSubmitted)
+            const showAttackTarget =
               state.phase === 'watchtower-reveal' ||
               state.phase === 'enemy-attack' ||
               state.phase === 'marker-visualization' ||
               (isTraitor && state.phase === 'action')
-            }
-            selectable={
-              (state.phase === 'action' && !needsPlayerTarget && !actionSubmitted) ||
-              (isTraitor && state.phase === 'traitor-voting' && !voteSubmitted)
-            }
-            onSectionClick={(id) => {
-              if (isTraitor && state.phase === 'traitor-voting' && !voteSubmitted) {
-                handleVote(id)
-              } else if (state.phase === 'action' && !needsPlayerTarget) {
-                setSelectedSection(id)
-              }
-            }}
-          />
+            return (
+              <div className="flex justify-center gap-3 flex-shrink-0">
+                {SECTION_ORDER.map((id) => {
+                  const section = state.sections.find((s) => s.id === id)!
+                  return (
+                    <SectionCard
+                      key={id}
+                      section={section}
+                      isSelected={selectedSection === id}
+                      isAttackTarget={showAttackTarget && state.attackTarget === id}
+                      selectable={selectable}
+                      onClick={() => {
+                        if (isTraitor && state.phase === 'traitor-voting' && !voteSubmitted) {
+                          handleVote(id)
+                        } else if (state.phase === 'action' && !needsPlayerTarget) {
+                          setSelectedSection(id)
+                        }
+                      }}
+                    />
+                  )
+                })}
+              </div>
+            )
+          })()}
 
           {/* Watchtower reveal */}
           {state.phase === 'watchtower-reveal' && state.watchtowerRevealTarget && (
@@ -272,7 +289,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
 
           {/* Action phase: hand + section selection */}
           {state.phase === 'action' && !winner && (
-            <div className="space-y-4">
+            <div className="space-y-4 flex flex-col items-center">
               {state.attackTarget && state.predictedAttackDamage !== null && (
                 <div className="bg-red-950/40 border border-red-800/50 rounded-xl px-3 py-2 flex items-center justify-between text-sm">
                   <span className="text-red-400">
