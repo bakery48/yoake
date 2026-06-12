@@ -10,7 +10,7 @@ export default function GamePage() {
   const router = useRouter()
   const roomId = params.roomId as string
 
-  const { gameState, submitVote, submitAction, transform } = useSocket()
+  const { gameState, submitVote, submitAction, transform, leaveRoom, rematch } = useSocket()
 
   if (!gameState || (gameState.phase === 'lobby' && gameState.roomId !== roomId)) {
     return (
@@ -35,6 +35,8 @@ export default function GamePage() {
       onVote={(sectionId) => submitVote(roomId, sectionId)}
       onAction={(cardId, targetSection) => submitAction(roomId, cardId, targetSection)}
       onTransform={() => transform(roomId)}
+      onLeave={() => { leaveRoom(roomId); router.push('/') }}
+      onRematch={() => rematch(roomId)}
     />
   )
 }

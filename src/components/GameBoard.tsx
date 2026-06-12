@@ -12,9 +12,11 @@ interface Props {
   onVote: (sectionId: SectionId) => void
   onAction: (cardId: string, targetSection: SectionId) => void
   onTransform: () => void
+  onLeave: () => void
+  onRematch: () => void
 }
 
-export default function GameBoard({ state, onVote, onAction, onTransform }: Props) {
+export default function GameBoard({ state, onVote, onAction, onTransform, onLeave, onRematch }: Props) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [selectedSection, setSelectedSection] = useState<SectionId | null>(null)
   const [selectedTargetPlayerId, setSelectedTargetPlayerId] = useState<string | null>(null)
@@ -159,10 +161,26 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
           <div className="text-3xl font-bold mb-1">
             {winner === 'defenders' ? '🌅 防衛者の勝利！' : '🌑 裏切り者の勝利！'}
           </div>
-          <div className="text-gray-300 text-sm">
+          <div className="text-gray-300 text-sm mb-4">
             {winner === 'defenders'
               ? '夜明けまで砦を守り切った！'
               : '2つのセクションが崩壊した…'}
+          </div>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={onLeave}
+              className="px-5 py-2 rounded-xl text-sm font-bold bg-dark-card border border-dark-border text-gray-300 hover:text-white hover:border-gray-500 transition-all"
+            >
+              ロビーへ戻る
+            </button>
+            {state.myPlayer.id === state.hostId && (
+              <button
+                onClick={onRematch}
+                className="px-5 py-2 rounded-xl text-sm font-bold bg-amber-glow text-black hover:bg-gold-light transition-all"
+              >
+                もう一戦
+              </button>
+            )}
           </div>
         </div>
       )}

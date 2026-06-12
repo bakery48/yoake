@@ -500,6 +500,53 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     broadcastRoomList(io)
   })
 
+  socket.on('lobby:leave', (payload: { roomId: string }) => {
+    lobbyPlayers.delete(socketId)
+    socket.leave(payload.roomId)
+  })
+
+  socket.on('lobby:rematch', (payload: { roomId: string }) => {
+    const state = rooms.get(payload.roomId)
+    if (!state || state.phase !== 'game-over' || state.hostId !== socketId) return
+
+    // Reset game state back to lobby with same players (humans only, drop bots)
+    const humanPlayers = state.players.filter((p) => !p.isBot)
+    const newState: GameState = {
+      ...state,
+      phase: 'lobby',
+      round: 0,
+      winner: null,
+      players: humanPlayers.map((p) => ({
+        ...p,
+        hand: [],
+        isReady: false,
+        isTransformed: false,
+        isCaptured: false,
+        capturedTurnsLeft: 0,
+        isStunned: false,
+        stunnedTurnsLeft: 0,
+        role: 'defender',
+        encouragedNextTurn: false,
+        playsThisTurn: 1,
+        maxPlaysThisTurn: 1,
+        noCarryoverNextTurn: false,
+      })),
+      sections: [],
+      traitorVotes: {},
+      traitorVotesSubmitted: [],
+      playedCards: {},
+      actionsSubmitted: [],
+      deck: [],
+      discardPile: [],
+      log: ['リマッチ開始！ホストがゲームを開始するのを待っています。'],
+      attackTarget: null,
+      watchtowerRevealTarget: null,
+      transformAnnouncement: null,
+    }
+    rooms.set(payload.roomId, newState)
+    broadcastGameState(io, newState)
+  })
+
   socket.on('disconnect', () => {
     const info = lobbyPlayers.get(socketId)
     if (!info) return
