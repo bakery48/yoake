@@ -396,7 +396,12 @@ export function resolveImmediateEffects(state: GameState): GameState {
     }
   }
 
-  for (const action of Object.values(s.playedCards)) {
+  const sortedActions = Object.values(s.playedCards).sort((a, b) => {
+    const priority = (effect: string) => effect === 'repair' || effect === 'emergency_repair' ? 0 : 1
+    return priority(a.card.effect) - priority(b.card.effect)
+  })
+
+  for (const action of sortedActions) {
     const { card, targetSection, playerId } = action
     const playerName = getPlayerName(s, playerId)
     const secDef = s.sections.find(sec => sec.id === targetSection)
