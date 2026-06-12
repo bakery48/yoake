@@ -256,6 +256,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
       discardPile: [],
       phaseTimer: -1,
       hostId: socketId,
+      transformAnnouncement: null,
     }
 
     rooms.set(roomId, state)

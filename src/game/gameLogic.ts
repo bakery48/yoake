@@ -127,6 +127,7 @@ export function createInitialGameState(
     discardPile: [],
     phaseTimer: -1,
     hostId,
+    transformAnnouncement: null,
   }
 }
 
@@ -202,6 +203,7 @@ export function buildPlayerView(state: GameState, playerId: string): PlayerView 
     phaseTimer: state.phaseTimer,
     hostId: state.hostId,
     traitorVotesSubmitted: state.traitorVotesSubmitted,
+    transformAnnouncement: state.transformAnnouncement ?? null,
   }
 }
 
@@ -369,7 +371,7 @@ export function autoSkipPlayer(
 
 /** Resolve immediate effects of all played cards */
 export function resolveImmediateEffects(state: GameState): GameState {
-  let s = { ...state, sections: state.sections.map(sec => ({ ...sec })) }
+  let s = { ...state, sections: state.sections.map(sec => ({ ...sec })), transformAnnouncement: null }
   s.players = s.players.map(p => ({ ...p }))
 
   const log: string[] = [...s.log]
@@ -843,6 +845,7 @@ export function transformPlayer(state: GameState, playerId: string): GameState {
     ...state,
     players,
     log: [...state.log, `💀 ${player.name} が変身した！`],
+    transformAnnouncement: player.name,
   }
 }
 

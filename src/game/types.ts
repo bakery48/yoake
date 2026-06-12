@@ -105,6 +105,8 @@ export interface GameState {
   phaseTimer: number
   // host
   hostId: string
+  // Set when a player transforms (cleared next phase)
+  transformAnnouncement: string | null
 }
 
 // What each player sees (server filters secrets)
@@ -128,6 +130,7 @@ export interface PlayerView {
   phaseTimer: number
   hostId: string
   traitorVotesSubmitted: string[]
+  transformAnnouncement: string | null
 }
 
 export interface PlayerPublicInfo {

@@ -20,7 +20,17 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
   const [selectedTargetPlayerId, setSelectedTargetPlayerId] = useState<string | null>(null)
   const [voteSubmitted, setVoteSubmitted] = useState(false)
   const [actionSubmitted, setActionSubmitted] = useState(false)
+  const [transformBanner, setTransformBanner] = useState<string | null>(null)
   const logRef = useRef<HTMLDivElement>(null)
+
+  // Show transform banner when announcement arrives
+  useEffect(() => {
+    if (state.transformAnnouncement) {
+      setTransformBanner(state.transformAnnouncement)
+      const t = setTimeout(() => setTransformBanner(null), 3000)
+      return () => clearTimeout(t)
+    }
+  }, [state.transformAnnouncement])
 
   // Reset selections on phase change
   useEffect(() => {
@@ -90,6 +100,20 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
 
   return (
     <div className="flex flex-col h-screen bg-dark-bg text-white overflow-hidden">
+      {/* Transform reveal overlay */}
+      {transformBanner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="animate-pulse text-center">
+            <div className="text-6xl mb-4">💀</div>
+            <div className="text-4xl font-extrabold text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.9)] tracking-wide">
+              {transformBanner}は
+            </div>
+            <div className="text-4xl font-extrabold text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.9)] tracking-wide mt-1">
+              モンスターだった！
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-2 border-b border-dark-border">
         <div className="flex items-center gap-3 flex-wrap">
