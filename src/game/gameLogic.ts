@@ -215,7 +215,6 @@ function computePredictedDamage(state: GameState): number | null {
   let dmg = baseEnemyDamage(state.round)
   const gate = state.sections.find((s) => s.id === 'gate')!
   if (gate.bonusActive && !gate.isCollapsed) dmg = Math.max(0, dmg - 1)
-  if (target.doubleDamageNextRound) dmg = dmg * 2
   return dmg
 }
 
