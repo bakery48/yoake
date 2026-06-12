@@ -45,12 +45,20 @@ export default function Home() {
   }, [socket])
 
   useEffect(() => {
-    if (gameState && gameState.phase !== 'lobby' && pendingRoomId) {
+    if (
+      gameState &&
+      gameState.phase !== 'lobby' &&
+      pendingRoomId &&
+      gameState.roomId === pendingRoomId  // stale state from previous game must not trigger
+    ) {
       router.push(`/game/${pendingRoomId}`)
     }
   }, [gameState, pendingRoomId, router])
 
-  const inRoom = pendingRoomId !== null && gameState?.phase === 'lobby'
+  const inRoom =
+    pendingRoomId !== null &&
+    gameState?.phase === 'lobby' &&
+    gameState?.roomId === pendingRoomId
 
   return (
     <Lobby
