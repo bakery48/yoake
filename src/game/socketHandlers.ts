@@ -12,6 +12,7 @@ import {
   resolveTraitorVoting,
   advanceFromWatchtowerReveal,
   submitPlayerAction,
+  autoSkipPlayer,
   resolveImmediateEffects,
   resolveMarkerVisualization,
   resolveEnemyAttack,
@@ -144,8 +145,9 @@ function triggerCpuActions(io: Server, roomId: string) {
         const s2 = rooms.get(roomId)!
         const updatedBot = s2.players.find((p) => p.id === bot.id)!
         const action = traitorCpuAction(s2, updatedBot)
-        if (!action.cardId) return
-        const { state: afterAction, allSubmitted } = submitPlayerAction(s2, bot.id, action.cardId, action.targetSection)
+        const { state: afterAction, allSubmitted } = action.cardId
+          ? submitPlayerAction(s2, bot.id, action.cardId, action.targetSection)
+          : autoSkipPlayer(s2, bot.id)
         rooms.set(roomId, afterAction)
         broadcastGameState(io, afterAction)
         if (allSubmitted) resolveAfterAllActions(io, roomId)
@@ -157,8 +159,9 @@ function triggerCpuActions(io: Server, roomId: string) {
           ? traitorCpuAction(s, currentBot)
           : defenderCpuAction(s, currentBot)
 
-      if (!action.cardId) return
-      const { state: afterAction, allSubmitted } = submitPlayerAction(s, bot.id, action.cardId, action.targetSection)
+      const { state: afterAction, allSubmitted } = action.cardId
+        ? submitPlayerAction(s, bot.id, action.cardId, action.targetSection)
+        : autoSkipPlayer(s, bot.id)
       rooms.set(roomId, afterAction)
       broadcastGameState(io, afterAction)
       if (allSubmitted) resolveAfterAllActions(io, roomId)

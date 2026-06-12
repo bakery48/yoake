@@ -352,6 +352,21 @@ export function submitPlayerAction(
   return { state: newState, allSubmitted: allEffective }
 }
 
+/** Force-skip a player's action (used when CPU has no valid card) */
+export function autoSkipPlayer(
+  state: GameState,
+  playerId: string,
+): { state: GameState; allSubmitted: boolean } {
+  const submittedSet = new Set(state.actionsSubmitted)
+  submittedSet.add(playerId)
+  const submitted = Array.from(submittedSet)
+  const newState: GameState = { ...state, actionsSubmitted: submitted }
+  const capturedIds = state.players.filter((p) => (p.isCaptured || p.isStunned) && !submitted.includes(p.id)).map(p => p.id)
+  const effectiveSubmitted = [...submitted, ...capturedIds]
+  const allEffective = state.players.every((p) => effectiveSubmitted.includes(p.id))
+  return { state: newState, allSubmitted: allEffective }
+}
+
 /** Resolve immediate effects of all played cards */
 export function resolveImmediateEffects(state: GameState): GameState {
   let s = { ...state, sections: state.sections.map(sec => ({ ...sec })) }
