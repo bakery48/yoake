@@ -45,20 +45,26 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
 
   // Cards that target players (not sections)
   const playerTargetEffects = ['encourage', 'capture', 'stun', 'escape', 'scout', 'release', 'forced_release']
+  // Cards that require no target (self-affecting)
+  const selfTargetEffects = ['conscription']
   const selectedCard = state.myPlayer.hand.find((c) => c.id === selectedCardId)
   const needsPlayerTarget = selectedCard && playerTargetEffects.includes(selectedCard.effect)
+  const isSelfTarget = selectedCard && selfTargetEffects.includes(selectedCard.effect)
 
   const canSubmitAction =
     state.phase === 'action' &&
     !actionSubmitted &&
     selectedCardId !== null &&
-    (needsPlayerTarget ? selectedTargetPlayerId !== null : selectedSection !== null)
+    (isSelfTarget || (needsPlayerTarget ? selectedTargetPlayerId !== null : selectedSection !== null))
 
   function handleSubmitAction() {
     if (!selectedCardId) return
     if (needsPlayerTarget && selectedTargetPlayerId) {
       // Use targetPlayerId as targetSection for these cards (server decodes)
       onAction(selectedCardId, selectedTargetPlayerId as unknown as SectionId)
+    } else if (isSelfTarget) {
+      // Self-targeting card: pass a dummy section (server ignores it)
+      onAction(selectedCardId, 'watchtower' as SectionId)
     } else if (selectedSection) {
       onAction(selectedCardId, selectedSection)
     }
@@ -238,17 +244,17 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
                   <div className="text-sm font-bold text-white">{selectedCard.nameJa}</div>
                   <div className="text-xs text-gray-400 mt-1">{selectedCard.descriptionJa}</div>
 
-                  {needsPlayerTarget && (
+                  {!isSelfTarget && needsPlayerTarget && (
                     <div className="mt-2 text-xs text-amber-400">
                       右のプレイヤーリストから対象を選択してください
                     </div>
                   )}
-                  {!needsPlayerTarget && !selectedSection && (
+                  {!isSelfTarget && !needsPlayerTarget && !selectedSection && (
                     <div className="mt-2 text-xs text-amber-400">
                       上のセクションカードから対象を選択してください
                     </div>
                   )}
-                  {selectedSection && !needsPlayerTarget && (
+                  {!isSelfTarget && selectedSection && !needsPlayerTarget && (
                     <div className="mt-2 text-xs text-green-400">
                       対象: {sectionNames[selectedSection]}
                     </div>
@@ -312,12 +318,16 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
                       <div key={pid} className="flex items-center gap-2 text-sm">
                         <span className="text-gray-400">{pInfo?.name ?? pid}</span>
                         <span className="text-amber-glow font-medium">{action.card.nameJa}</span>
-                        <span className="text-gray-500 text-xs">→</span>
-                        <span className="text-gray-400 text-xs">
-                          {sectionNames[action.targetSection] ??
-                            state.players.find((p) => p.id === action.targetSection)?.name ??
-                            action.targetSection}
-                        </span>
+                        {!selfTargetEffects.includes(action.card.effect) && (
+                          <>
+                            <span className="text-gray-500 text-xs">→</span>
+                            <span className="text-gray-400 text-xs">
+                              {sectionNames[action.targetSection] ??
+                                state.players.find((p) => p.id === action.targetSection)?.name ??
+                                action.targetSection}
+                            </span>
+                          </>
+                        )}
                       </div>
                     )
                   })}
