@@ -34,45 +34,41 @@ export default function PhaseIndicator({ phase, round, dawnCounter }: Props) {
   const info = PHASE_INFO[phase]
 
   return (
-    <div className="flex items-center gap-4 bg-dark-card border border-dark-border rounded-lg px-4 py-2">
-      <div className="flex flex-col items-center min-w-[80px]">
-        <span className="text-xs text-gray-500">ラウンド</span>
-        <span className="text-2xl font-bold text-amber-glow">{round}</span>
+    <div className="flex items-center gap-2 bg-dark-card border border-dark-border rounded-lg px-2 py-1.5">
+      {/* Round */}
+      <div className="flex items-baseline gap-1 flex-shrink-0">
+        <span className="text-[10px] text-gray-500">R</span>
+        <span className="text-lg font-bold text-amber-glow leading-none">{round}</span>
       </div>
 
-      <div className="w-px h-10 bg-dark-border" />
+      <div className="w-px h-6 bg-dark-border flex-shrink-0" />
 
-      <div className="flex flex-col items-center min-w-[96px]">
-        <span className="text-xs text-gray-500">夜明けまで</span>
-        <div className="flex gap-0.5 mt-1">
-          {Array.from({ length: 8 }).map((_, i) => {
-            const filled = i < dawnCounter
-            const isNext = i === dawnCounter - 1
-            return (
-              <div
-                key={i}
-                className={`w-2.5 h-5 rounded-sm transition-all duration-500 ${
-                  filled
-                    ? isNext
-                      ? 'bg-amber-glow shadow-[0_0_6px_rgba(251,191,36,0.8)]'
-                      : 'bg-amber-500/70'
-                    : 'bg-dark-border'
-                }`}
-              />
-            )
-          })}
-        </div>
-        <span className="text-[10px] text-amber-400 mt-0.5">{dawnCounter}/8ラウンド</span>
+      {/* Dawn counter */}
+      <div className="flex items-center gap-0.5 flex-shrink-0">
+        {Array.from({ length: 8 }).map((_, i) => {
+          const filled = i < dawnCounter
+          const isNext = i === dawnCounter - 1
+          return (
+            <div
+              key={i}
+              className={`w-2 h-4 rounded-sm transition-all duration-500 ${
+                filled
+                  ? isNext
+                    ? 'bg-amber-glow shadow-[0_0_4px_rgba(251,191,36,0.8)]'
+                    : 'bg-amber-500/70'
+                  : 'bg-dark-border'
+              }`}
+            />
+          )
+        })}
       </div>
 
-      <div className="w-px h-10 bg-dark-border" />
+      <div className="w-px h-6 bg-dark-border flex-shrink-0" />
 
-      <div className="flex flex-col flex-1">
-        <span className="text-xs text-gray-500">現在フェーズ</span>
-        <span className={`text-sm font-semibold ${info.color}`}>
-          {info.icon} {info.label}
-        </span>
-      </div>
+      {/* Phase */}
+      <span className={`text-xs font-semibold truncate ${info.color}`}>
+        {info.icon} <span className="hidden sm:inline">{info.label}</span>
+      </span>
     </div>
   )
 }

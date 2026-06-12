@@ -48,7 +48,7 @@ function CardItem({ card, isSelected, onSelect, disabled }: CardItemProps) {
       onClick={onSelect}
       disabled={disabled}
       className={`
-        relative flex flex-col rounded-2xl border-2 text-left transition-all duration-200 w-[150px] flex-shrink-0
+        relative flex flex-col rounded-2xl border-2 text-left transition-all duration-200 w-[120px] sm:w-[150px] flex-shrink-0
         bg-[#1a1a2e]
         ${CARD_BORDER[card.type]}
         ${isSelected ? 'border-amber-glow shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105 -translate-y-2' : ''}

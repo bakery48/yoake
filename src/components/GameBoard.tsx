@@ -29,6 +29,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
   const [voteSubmitted, setVoteSubmitted] = useState(false)
   const [actionSubmitted, setActionSubmitted] = useState(false)
   const [transformBanner, setTransformBanner] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
 
   // Show transform banner when announcement arrives
@@ -124,37 +125,54 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
         </div>
       )}
       {/* Header */}
-      <div className="flex-shrink-0 px-4 py-2 border-b border-dark-border">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex flex-col">
-            <span className="text-xs text-gray-500">ルーム</span>
-            <span className="text-sm font-mono font-bold text-amber-glow">{state.roomId}</span>
+      <div className="flex-shrink-0 px-3 py-2 border-b border-dark-border">
+        {/* Top row */}
+        <div className="flex items-center gap-2">
+          {/* Room ID */}
+          <span className="text-xs font-mono font-bold text-amber-glow flex-shrink-0">{state.roomId}</span>
+
+          {/* Phase indicator — fills remaining space */}
+          <div className="flex-1 min-w-0">
+            <PhaseIndicator phase={state.phase} round={state.round} dawnCounter={state.dawnCounter} />
           </div>
-          <div className="flex-1">
-            <PhaseIndicator
-              phase={state.phase}
-              round={state.round}
-              dawnCounter={state.dawnCounter}
-            />
+
+          {/* Role badge */}
+          <div className={`flex-shrink-0 rounded-lg px-2 py-1 text-xs font-bold ${
+            isTraitor
+              ? isTransformed
+                ? 'bg-red-900 text-red-300 border border-red-600'
+                : 'bg-red-950 text-red-400 border border-red-800'
+              : 'bg-blue-950 text-blue-300 border border-blue-800'
+          }`}>
+            {isTraitor ? (isTransformed ? '👹 変身済み' : '🐍') : '⚔️'}
+            <span className="hidden sm:inline ml-1">
+              {isTraitor ? (isTransformed ? '' : '裏切り者') : '防衛者'}
+            </span>
           </div>
-          {/* Crisis indicator */}
+
+          {/* Crisis */}
           {state.collapsedCount >= 1 && (
-            <div className="bg-red-900/80 border border-red-600 rounded-lg px-3 py-1 text-sm font-bold text-red-400 animate-pulse">
-              ⚠ クライシス！
+            <div className="flex-shrink-0 bg-red-900/80 border border-red-600 rounded-lg px-2 py-1 text-xs font-bold text-red-400 animate-pulse">
+              ⚠
             </div>
           )}
-          {/* My role badge */}
-          <div
-            className={`rounded-lg px-3 py-1 text-sm font-bold ${
-              isTraitor
-                ? isTransformed
-                  ? 'bg-red-900 text-red-300 border border-red-600'
-                  : 'bg-red-950 text-red-400 border border-red-800'
-                : 'bg-blue-950 text-blue-300 border border-blue-800'
-            }`}
+
+          {/* Sidebar toggle (mobile) */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="flex-shrink-0 lg:hidden text-xs text-gray-400 hover:text-white border border-dark-border px-2 py-1 rounded-lg"
           >
-            {isTraitor ? (isTransformed ? '👹 変身済み' : '🐍 裏切り者') : '⚔️ 防衛者'}
+            👥
+          </button>
+
+          <div className="flex-shrink-0 hidden sm:flex gap-1">
+            <RulebookModal />
+            <CardReference />
           </div>
+        </div>
+
+        {/* Mobile-only: rulebook + card ref in second row */}
+        <div className="flex gap-1 mt-1 sm:hidden">
           <RulebookModal />
           <CardReference />
         </div>
@@ -226,7 +244,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
                 state.phase === 'action' && !actionSubmitted &&
                 selectedCardId !== null && !needsPlayerTarget && !isSelfTarget && !selectedSection
               return (
-                <div className="flex-shrink-0 px-3 pt-3 pb-6 flex justify-center gap-3 bg-gradient-to-b from-black/70 to-transparent">
+                <div className="flex-shrink-0 px-3 pt-3 pb-6 flex gap-3 overflow-x-auto justify-start sm:justify-center bg-gradient-to-b from-black/70 to-transparent">
                   {SECTION_ORDER.map((id) => {
                     const section = state.sections.find((s) => s.id === id)!
                     return (
@@ -478,8 +496,27 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
           </div>
         </div>
 
-        {/* Right sidebar: Player list + Log */}
-        <div className="flex flex-col w-64 flex-shrink-0 border-l border-dark-border overflow-hidden">
+        {/* Right sidebar: Player list + Log — fixed on mobile, inline on desktop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <div className={`
+          flex flex-col border-l border-dark-border overflow-hidden
+          flex-shrink-0 w-64
+          lg:relative lg:flex
+          ${sidebarOpen
+            ? 'fixed right-0 top-0 bottom-0 z-50 bg-[#12121e]'
+            : 'hidden lg:flex'}
+        `}>
+          {/* Mobile close button */}
+          <div className="flex items-center justify-between px-3 pt-3 pb-0 lg:hidden">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">プレイヤー / ログ</span>
+            <button onClick={() => setSidebarOpen(false)} className="text-gray-500 hover:text-white text-lg">✕</button>
+          </div>
+
           {/* Players */}
           <div className="flex-shrink-0 p-3 border-b border-dark-border">
             <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">プレイヤー</div>

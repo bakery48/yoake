@@ -60,7 +60,7 @@ export default function SectionCard({
       disabled={!selectable || section.isCollapsed}
       className={`
         relative flex flex-col bg-stone-900/90 border-2 rounded-2xl
-        text-left transition-all duration-200 w-[160px]
+        text-left transition-all duration-200 w-[130px] sm:w-[160px] flex-shrink-0
         ${borderColor}
         ${selectable && !section.isCollapsed ? 'cursor-pointer hover:scale-105 hover:brightness-110' : 'cursor-default'}
         ${section.isCollapsed ? 'opacity-40 grayscale' : ''}
