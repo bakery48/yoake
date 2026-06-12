@@ -64,6 +64,7 @@ export interface Player {
   id: string
   name: string
   role: PlayerRole
+  preferredRole?: PlayerRole  // test: player-chosen role before game starts
   isTransformed: boolean
   isCaptured: boolean
   capturedTurnsLeft: number
@@ -140,6 +141,7 @@ export interface PlayerPublicInfo {
   cardCount: number
   isReady: boolean
   isBot: boolean
+  preferredRole?: PlayerRole
   playsThisTurn: number
   maxPlaysThisTurn: number
 }

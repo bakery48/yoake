@@ -17,6 +17,7 @@ export default function Home() {
     listRooms,
     addCpu,
     removeCpu,
+    setRole,
     rooms,
     socket,
   } = useSocket()
@@ -69,6 +70,7 @@ export default function Home() {
               cardCount: p.cardCount,
               isReady: p.isReady,
               isBot: p.isBot,
+              preferredRole: p.preferredRole,
             }))
           : []
       }
@@ -77,6 +79,7 @@ export default function Home() {
       onStartGame={startGame}
       onAddCpu={addCpu}
       onRemoveCpu={removeCpu}
+      onSetRole={setRole}
     />
   )
 }

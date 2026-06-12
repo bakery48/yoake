@@ -29,6 +29,7 @@ export interface UseSocketReturn {
   listRooms: () => void
   addCpu: (roomId: string) => void
   removeCpu: (roomId: string, cpuId: string) => void
+  setRole: (roomId: string, role: 'defender' | 'traitor' | null) => void
   rooms: RoomInfo[]
 }
 
@@ -110,6 +111,10 @@ export function useSocket(): UseSocketReturn {
     socketRef.current?.emit('lobby:remove_cpu', { roomId, cpuId })
   }, [])
 
+  const setRole = useCallback((roomId: string, role: 'defender' | 'traitor' | null) => {
+    socketRef.current?.emit('lobby:set_role', { roomId, role })
+  }, [])
+
   return {
     socket: socketRef.current,
     gameState,
@@ -124,6 +129,7 @@ export function useSocket(): UseSocketReturn {
     listRooms,
     addCpu,
     removeCpu,
+    setRole,
     rooms,
   }
 }

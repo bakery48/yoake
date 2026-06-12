@@ -37,27 +37,44 @@ function markerId(): string {
 
 // ─── Initialization ───────────────────────────────────────────────────────────
 
+type PlayerInit = { id: string; name: string; isBot?: boolean; preferredRole?: PlayerRole }
+
 export function createInitialGameState(
   roomId: string,
-  players: { id: string; name: string }[],
+  players: PlayerInit[],
   hostId: string,
 ): GameState {
   const playerCount = players.length
-
-  // Assign roles
   const traitorCount = TRAITOR_COUNTS[playerCount] ?? 1
-  const indices = shuffle(Array.from({ length: playerCount }, (_, i) => i))
-  const traitorIndices = new Set(indices.slice(0, traitorCount))
+
+  // Honor preferredRole where possible, respecting traitor count cap
+  const roleMap = new Map<string, PlayerRole>()
+  const wantTraitor = players.filter((p) => p.preferredRole === 'traitor')
+  const wantDefender = players.filter((p) => p.preferredRole === 'defender')
+  const noPreference = players.filter((p) => !p.preferredRole)
+
+  // Assign traitor slots: preferred traitors first, then random fill
+  const traitorSlots = Math.min(wantTraitor.length, traitorCount)
+  wantTraitor.slice(0, traitorSlots).forEach((p) => roleMap.set(p.id, 'traitor'))
+  wantDefender.forEach((p) => roleMap.set(p.id, 'defender'))
+
+  // Fill remaining traitor slots from no-preference pool
+  const remaining = traitorCount - traitorSlots
+  const shuffledNoPreference = shuffle([...noPreference])
+  shuffledNoPreference.slice(0, remaining).forEach((p) => roleMap.set(p.id, 'traitor'))
+  shuffledNoPreference.slice(remaining).forEach((p) => roleMap.set(p.id, 'defender'))
+
+  // Any wantTraitor overflow becomes defender
+  wantTraitor.slice(traitorSlots).forEach((p) => roleMap.set(p.id, 'defender'))
 
   const deck = buildDeck(playerCount)
-  const transformDeck = buildTransformationDeck()
 
   // Deal 3 cards to each player
   let deckPos = 0
-  const gamePlayers: Player[] = players.map((p, i) => {
+  const gamePlayers: Player[] = players.map((p) => {
     const hand = deck.slice(deckPos, deckPos + 3)
     deckPos += 3
-    const role: PlayerRole = traitorIndices.has(i) ? 'traitor' : 'defender'
+    const role: PlayerRole = roleMap.get(p.id) ?? 'defender'
     return {
       id: p.id,
       name: p.name,
@@ -69,7 +86,7 @@ export function createInitialGameState(
       stunnedTurnsLeft: 0,
       hand,
       isReady: false,
-      isBot: (p as { id: string; name: string; isBot?: boolean }).isBot ?? false,
+      isBot: p.isBot ?? false,
       encouragedNextTurn: false,
       playsThisTurn: 1,
       maxPlaysThisTurn: 1,
@@ -133,6 +150,7 @@ export function buildPlayerView(state: GameState, playerId: string): PlayerView 
     cardCount: p.hand.length,
     isReady: p.isReady,
     isBot: p.isBot,
+    preferredRole: p.preferredRole,
     playsThisTurn: p.playsThisTurn,
     maxPlaysThisTurn: p.maxPlaysThisTurn,
   }))

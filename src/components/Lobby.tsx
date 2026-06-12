@@ -8,6 +8,7 @@ interface PlayerInfo {
   cardCount: number
   isReady: boolean
   isBot?: boolean
+  preferredRole?: 'defender' | 'traitor'
 }
 
 interface RoomInfo {
@@ -33,6 +34,7 @@ interface Props {
   onStartGame: (roomId: string) => void
   onAddCpu: (roomId: string) => void
   onRemoveCpu: (roomId: string, cpuId: string) => void
+  onSetRole: (roomId: string, role: 'defender' | 'traitor' | null) => void
 }
 
 export default function Lobby({
@@ -50,6 +52,7 @@ export default function Lobby({
   onStartGame,
   onAddCpu,
   onRemoveCpu,
+  onSetRole,
 }: Props) {
   const [playerName, setPlayerName] = useState('')
   const [joinCode, setJoinCode] = useState('')
@@ -132,6 +135,36 @@ export default function Lobby({
                 </div>
               ))}
             </div>
+
+            {/* Role preference (test feature) */}
+            {(() => {
+              const me = players.find((p) => p.id === myId)
+              if (!me || me.isBot) return null
+              return (
+                <div className="mb-4 p-3 bg-dark-bg border border-dark-border rounded-xl">
+                  <div className="text-xs text-gray-500 mb-2">役職を指定（テスト用）</div>
+                  <div className="flex gap-2">
+                    {(['defender', 'traitor', null] as const).map((role) => (
+                      <button
+                        key={String(role)}
+                        onClick={() => onSetRole(roomId!, role)}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          me.preferredRole === role
+                            ? role === 'traitor'
+                              ? 'bg-red-700 text-white'
+                              : role === 'defender'
+                              ? 'bg-blue-700 text-white'
+                              : 'bg-amber-glow text-black'
+                            : 'bg-dark-border text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {role === 'defender' ? '🛡 防衛者' : role === 'traitor' ? '🗡 裏切り者' : 'ランダム'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
 
             {!canStart && (
               <p className="text-xs text-yellow-500 text-center mb-4">

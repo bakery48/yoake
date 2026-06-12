@@ -368,6 +368,19 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     broadcastRoomList(io)
   })
 
+  socket.on('lobby:set_role', (payload: { roomId: string; role: 'defender' | 'traitor' | null }) => {
+    const state = rooms.get(payload.roomId)
+    if (!state || state.phase !== 'lobby') return
+    const newState: GameState = {
+      ...state,
+      players: state.players.map((p) =>
+        p.id === socketId ? { ...p, preferredRole: payload.role ?? undefined } : p,
+      ),
+    }
+    rooms.set(payload.roomId, newState)
+    broadcastGameState(io, newState)
+  })
+
   socket.on('game:start', (payload: { roomId: string }) => {
     const state = rooms.get(payload.roomId)
     if (!state || state.hostId !== socketId) return
@@ -378,7 +391,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
 
     const newState = createInitialGameState(
       payload.roomId,
-      state.players.map((p) => ({ id: p.id, name: p.name, isBot: p.isBot })),
+      state.players.map((p) => ({ id: p.id, name: p.name, isBot: p.isBot, preferredRole: p.preferredRole })),
       socketId,
     )
     rooms.set(payload.roomId, newState)
