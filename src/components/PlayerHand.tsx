@@ -48,7 +48,7 @@ function CardItem({ card, isSelected, onSelect, disabled }: CardItemProps) {
       onClick={onSelect}
       disabled={disabled}
       className={`
-        relative flex flex-col rounded-2xl border-2 text-left transition-all duration-200 w-[150px]
+        relative flex flex-col rounded-2xl border-2 text-left transition-all duration-200 w-[150px] flex-shrink-0
         bg-[#1a1a2e]
         ${CARD_BORDER[card.type]}
         ${isSelected ? 'border-amber-glow shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105 -translate-y-2' : ''}
@@ -100,7 +100,14 @@ export default function PlayerHand({ hand, selectedCardId, onSelectCard, phase, 
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-gray-300">手札</span>
+        <span className="text-sm font-semibold text-gray-300">
+          手札
+          {hand.length > 0 && (
+            <span className="ml-2 text-xs font-normal text-gray-500 bg-dark-border px-1.5 py-0.5 rounded-full">
+              {hand.length}枚
+            </span>
+          )}
+        </span>
         {isCapturedOrStunned && (
           <span className="text-xs text-yellow-400">
             {myPlayer.isCaptured ? '⛓ 拘束中' : '⚡ スタン中'} — 一部カードのみ使用可
@@ -110,7 +117,7 @@ export default function PlayerHand({ hand, selectedCardId, onSelectCard, phase, 
       {hand.length === 0 ? (
         <div className="text-gray-600 text-sm italic text-center py-4">手札なし</div>
       ) : (
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
           {hand.map((card) => (
             <CardItem
               key={card.id}

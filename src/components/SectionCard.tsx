@@ -23,6 +23,7 @@ interface Props {
   isAttackTarget?: boolean
   onClick?: () => void
   selectable?: boolean
+  isHinted?: boolean
 }
 
 export default function SectionCard({
@@ -31,6 +32,7 @@ export default function SectionCard({
   isAttackTarget,
   onClick,
   selectable,
+  isHinted,
 }: Props) {
   const hpPercent = section.isCollapsed ? 0 : (section.hp / section.maxHp) * 100
 
@@ -46,6 +48,8 @@ export default function SectionCard({
     ? 'border-red-500 shadow-red-500/50 shadow-xl animate-pulse'
     : isSelected
     ? 'border-amber-glow shadow-amber-glow/50 shadow-xl'
+    : isHinted
+    ? 'border-amber-400/80 shadow-amber-400/30 shadow-lg animate-pulse'
     : section.bonusActive
     ? 'border-teal-500/70'
     : 'border-stone-600/60'

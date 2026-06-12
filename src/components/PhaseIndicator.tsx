@@ -42,18 +42,27 @@ export default function PhaseIndicator({ phase, round, dawnCounter }: Props) {
 
       <div className="w-px h-10 bg-dark-border" />
 
-      <div className="flex flex-col items-center min-w-[80px]">
+      <div className="flex flex-col items-center min-w-[96px]">
         <span className="text-xs text-gray-500">夜明けまで</span>
-        <div className="flex gap-1 mt-1">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className={`w-2 h-4 rounded-sm ${
-                i < dawnCounter ? 'bg-amber-glow' : 'bg-dark-border'
-              }`}
-            />
-          ))}
+        <div className="flex gap-0.5 mt-1">
+          {Array.from({ length: 8 }).map((_, i) => {
+            const filled = i < dawnCounter
+            const isNext = i === dawnCounter - 1
+            return (
+              <div
+                key={i}
+                className={`w-2.5 h-5 rounded-sm transition-all duration-500 ${
+                  filled
+                    ? isNext
+                      ? 'bg-amber-glow shadow-[0_0_6px_rgba(251,191,36,0.8)]'
+                      : 'bg-amber-500/70'
+                    : 'bg-dark-border'
+                }`}
+              />
+            )
+          })}
         </div>
+        <span className="text-[10px] text-amber-400 mt-0.5">{dawnCounter}/8ラウンド</span>
       </div>
 
       <div className="w-px h-10 bg-dark-border" />

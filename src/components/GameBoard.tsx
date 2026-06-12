@@ -196,6 +196,15 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
         <div className="flex flex-col flex-1 overflow-hidden relative">
           {/* Map background fills entire area */}
           <FortressMap className="absolute inset-0" />
+          {/* Phase-specific tint */}
+          <div className={`absolute inset-0 pointer-events-none transition-colors duration-700 ${
+            state.phase === 'enemy-attack'        ? 'bg-red-900/25' :
+            state.phase === 'traitor-voting'      ? 'bg-purple-950/25' :
+            state.phase === 'watchtower-reveal'   ? 'bg-yellow-900/20' :
+            state.phase === 'action'              ? 'bg-blue-950/15' :
+            state.phase === 'immediate-effects'   ? 'bg-purple-900/20' :
+            'bg-transparent'
+          }`} />
 
           {/* Overlay layout */}
           <div className="relative flex-1 flex flex-col overflow-hidden">
@@ -209,6 +218,9 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
                 state.phase === 'enemy-attack' ||
                 state.phase === 'marker-visualization' ||
                 (isTraitor && state.phase === 'action')
+              const awaitingSectionPick =
+                state.phase === 'action' && !actionSubmitted &&
+                selectedCardId !== null && !needsPlayerTarget && !isSelfTarget && !selectedSection
               return (
                 <div className="flex-shrink-0 px-3 pt-3 pb-6 flex justify-center gap-3 bg-gradient-to-b from-black/70 to-transparent">
                   {SECTION_ORDER.map((id) => {
@@ -220,6 +232,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
                         isSelected={selectedSection === id}
                         isAttackTarget={showAttackTarget && state.attackTarget === id}
                         selectable={selectable}
+                        isHinted={awaitingSectionPick && !section.isCollapsed}
                         onClick={() => {
                           if (isTraitor && state.phase === 'traitor-voting' && !voteSubmitted) {
                             handleVote(id)
@@ -284,6 +297,27 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
               {!isTraitor && state.phase === 'traitor-voting' && (
                 <div className="bg-black/50 border border-dark-border rounded-xl p-3 text-center text-gray-400 text-sm backdrop-blur-sm">
                   <div className="animate-pulse">🌙 裏切り者が密かに謀議中…</div>
+                </div>
+              )}
+
+              {/* Auto-processing phase indicator */}
+              {(state.phase === 'immediate-effects' ||
+                state.phase === 'marker-visualization' ||
+                state.phase === 'enemy-attack' ||
+                state.phase === 'draw') && (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <div className="flex gap-1">
+                    {[0,1,2].map(i => (
+                      <div key={i} className="w-2 h-2 rounded-full bg-amber-glow animate-bounce"
+                        style={{ animationDelay: `${i * 0.15}s` }} />
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-400">
+                    {state.phase === 'immediate-effects' ? 'カード効果を処理中…' :
+                     state.phase === 'marker-visualization' ? 'マーカーを確認中…' :
+                     state.phase === 'enemy-attack' ? '敵が攻撃中…' :
+                     'カードを配布中…'}
+                  </span>
                 </div>
               )}
 
@@ -374,7 +408,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
                           : 'bg-dark-border text-gray-600 cursor-not-allowed'
                       }`}
                     >
-                      カードを使用する
+                      {selectedCard ? `「${selectedCard.nameJa}」を使用する` : 'カードを使用する'}
                     </button>
                   )}
 
@@ -430,14 +464,23 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
             <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">イベントログ</div>
             <div
               ref={logRef}
-              className="flex-1 overflow-y-auto space-y-1 text-xs text-gray-400 font-mono"
+              className="flex-1 overflow-y-auto space-y-1 text-xs font-mono"
             >
-              {state.log.map((entry, i) => (
-                <div key={i} className="leading-relaxed">
-                  <span className="text-gray-600 mr-1">[{i + 1}]</span>
-                  {entry}
-                </div>
-              ))}
+              {state.log.map((entry, i) => {
+                const color =
+                  /崩壊|ダメージ|攻撃|ブレス|クラック|レイド|スタン|ランページ/.test(entry) ? 'text-red-400' :
+                  /修復|耐久度\+|解放|激励/.test(entry) ? 'text-green-400' :
+                  /拘束|捕縛/.test(entry) ? 'text-yellow-400' :
+                  /裏切り者|モンスター|変身/.test(entry) ? 'text-purple-400' :
+                  /見張り塔|啓示/.test(entry) ? 'text-amber-300' :
+                  'text-gray-400'
+                return (
+                  <div key={i} className={`leading-relaxed ${color}`}>
+                    <span className="text-gray-600 mr-1">[{i + 1}]</span>
+                    {entry}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
