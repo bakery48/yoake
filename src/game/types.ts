@@ -131,6 +131,7 @@ export interface PlayerView {
   hostId: string
   traitorVotesSubmitted: string[]
   transformAnnouncement: string | null
+  predictedAttackDamage: number | null
 }
 
 export interface PlayerPublicInfo {

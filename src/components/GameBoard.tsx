@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { PlayerView, SectionId, GamePhase } from '@/game/types'
 import FortressMap from './FortressMap'
+import CardReference from './CardReference'
 import PlayerHand from './PlayerHand'
 import PlayerList from './PlayerList'
 import PhaseIndicator from './PhaseIndicator'
@@ -12,9 +13,11 @@ interface Props {
   onVote: (sectionId: SectionId) => void
   onAction: (cardId: string, targetSection: SectionId) => void
   onTransform: () => void
+  onLeave: () => void
+  onRematch: () => void
 }
 
-export default function GameBoard({ state, onVote, onAction, onTransform }: Props) {
+export default function GameBoard({ state, onVote, onAction, onTransform, onLeave, onRematch }: Props) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [selectedSection, setSelectedSection] = useState<SectionId | null>(null)
   const [selectedTargetPlayerId, setSelectedTargetPlayerId] = useState<string | null>(null)
@@ -146,6 +149,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
           >
             {isTraitor ? (isTransformed ? '👹 変身済み' : '🐍 裏切り者') : '⚔️ 防衛者'}
           </div>
+          <CardReference />
         </div>
       </div>
 
@@ -159,10 +163,26 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
           <div className="text-3xl font-bold mb-1">
             {winner === 'defenders' ? '🌅 防衛者の勝利！' : '🌑 裏切り者の勝利！'}
           </div>
-          <div className="text-gray-300 text-sm">
+          <div className="text-gray-300 text-sm mb-4">
             {winner === 'defenders'
               ? '夜明けまで砦を守り切った！'
               : '2つのセクションが崩壊した…'}
+          </div>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={onLeave}
+              className="px-5 py-2 rounded-xl text-sm font-bold bg-dark-card border border-dark-border text-gray-300 hover:text-white hover:border-gray-500 transition-all"
+            >
+              ロビーへ戻る
+            </button>
+            {state.myPlayer.id === state.hostId && (
+              <button
+                onClick={onRematch}
+                className="px-5 py-2 rounded-xl text-sm font-bold bg-amber-glow text-black hover:bg-gold-light transition-all"
+              >
+                もう一戦
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -253,6 +273,17 @@ export default function GameBoard({ state, onVote, onAction, onTransform }: Prop
           {/* Action phase: hand + section selection */}
           {state.phase === 'action' && !winner && (
             <div className="space-y-4">
+              {state.attackTarget && state.predictedAttackDamage !== null && (
+                <div className="bg-red-950/40 border border-red-800/50 rounded-xl px-3 py-2 flex items-center justify-between text-sm">
+                  <span className="text-red-400">
+                    ⚔️ 次の敵襲 → <span className="font-bold text-white">{sectionNames[state.attackTarget]}</span>
+                  </span>
+                  <span className="text-red-300 font-bold">
+                    予想ダメージ <span className="text-red-400 text-base">{state.predictedAttackDamage}</span>
+                    <span className="text-xs text-gray-500 ml-1">※カード効果前</span>
+                  </span>
+                </div>
+              )}
               <PlayerHand
                 hand={state.myPlayer.hand}
                 selectedCardId={selectedCardId}

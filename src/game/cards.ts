@@ -120,8 +120,8 @@ export const TRANSFORMATION_CARDS: Omit<Card, 'id'>[] = [
     name: 'Stun',
     nameJa: 'スタン',
     type: 'transformation',
-    description: 'Restrict 1 defender for 1 turn (capture/release cards only)',
-    descriptionJa: '防衛者1人を1ターン制限する（捕縛/解放カードのみ使用可）',
+    description: 'Capture 1 defender for 3 turns',
+    descriptionJa: '防衛者1人を3ターン拘束する',
     effect: 'stun',
   },
   {
@@ -167,6 +167,8 @@ export function buildDeck(playerCount: number): Card[] {
   const perDefense = Math.ceil(defenseTarget / DEFENSE_CARDS.length)
   for (const template of DEFENSE_CARDS) {
     let count = perDefense
+    // repair is the basic action — appears twice as often
+    if (template.effect === 'repair') count = perDefense * 2
     // capture is rare
     if (template.effect === 'capture') count = Math.max(1, Math.floor(perDefense / 3))
     for (let i = 0; i < count; i++) deck.push(instantiate(template))
@@ -185,7 +187,9 @@ export function buildDeck(playerCount: number): Card[] {
 export function buildTransformationDeck(): Card[] {
   const deck: Card[] = []
   for (const template of TRANSFORMATION_CARDS) {
-    for (let i = 0; i < 3; i++) deck.push(instantiate(template))
+    // breath is the basic traitor action — appears twice as often
+    const count = template.effect === 'breath' ? 6 : 3
+    for (let i = 0; i < count; i++) deck.push(instantiate(template))
   }
   return shuffle(deck)
 }

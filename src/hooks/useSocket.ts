@@ -57,6 +57,8 @@ export interface UseSocketReturn {
   submitVote: (roomId: string, targetSection: SectionId) => void
   submitAction: (roomId: string, cardId: string, targetSection: SectionId) => void
   transform: (roomId: string) => void
+  leaveRoom: (roomId: string) => void
+  rematch: (roomId: string) => void
   listRooms: () => void
   addCpu: (roomId: string) => void
   removeCpu: (roomId: string, cpuId: string) => void
@@ -94,6 +96,8 @@ export function useSocket(): UseSocketReturn {
   const submitVote  = useCallback((roomId: string, t: SectionId) => s.emit('traitor:vote', { roomId, targetSection: t }), [s])
   const submitAction = useCallback((roomId: string, cardId: string, t: SectionId) => s.emit('action:submit', { roomId, cardId, targetSection: t }), [s])
   const transform   = useCallback((roomId: string) => s.emit('player:transform', { roomId }), [s])
+  const leaveRoom   = useCallback((roomId: string) => { globalPendingRoomId = null; globalGameState = null; s.emit('lobby:leave', { roomId }); notify() }, [s])
+  const rematch     = useCallback((roomId: string) => s.emit('lobby:rematch', { roomId }), [s])
   const listRooms   = useCallback(() => s.emit('lobby:list'), [s])
   const addCpu      = useCallback((roomId: string) => s.emit('lobby:add_cpu', { roomId }), [s])
   const removeCpu   = useCallback((roomId: string, cpuId: string) => s.emit('lobby:remove_cpu', { roomId, cpuId }), [s])
@@ -110,6 +114,8 @@ export function useSocket(): UseSocketReturn {
     submitVote,
     submitAction,
     transform,
+    leaveRoom,
+    rematch,
     listRooms,
     addCpu,
     removeCpu,

@@ -204,7 +204,18 @@ export function buildPlayerView(state: GameState, playerId: string): PlayerView 
     hostId: state.hostId,
     traitorVotesSubmitted: state.traitorVotesSubmitted,
     transformAnnouncement: state.transformAnnouncement ?? null,
+    predictedAttackDamage: computePredictedDamage(state),
   }
+}
+
+function computePredictedDamage(state: GameState): number | null {
+  if (!state.attackTarget) return null
+  const target = state.sections.find((s) => s.id === state.attackTarget)
+  if (!target || target.isCollapsed) return null
+  let dmg = baseEnemyDamage(state.round)
+  const gate = state.sections.find((s) => s.id === 'gate')!
+  if (gate.bonusActive && !gate.isCollapsed) dmg = Math.max(0, dmg - 1)
+  return dmg
 }
 
 // ─── Phase Transitions ────────────────────────────────────────────────────────
@@ -224,21 +235,10 @@ export function submitTraitorVote(
   submittedSet.add(playerId)
   const submitted = Array.from(submittedSet)
 
-  // Latent traitors also place a damage marker on the voted section
-  const newMarker: Marker = {
-    id: markerId(),
-    placedByPlayerId: playerId,
-    type: 'damage',
-  }
-  const newSections = state.sections.map((s) =>
-    s.id === targetSection ? { ...s, markers: [...s.markers, newMarker] } : s,
-  )
-
   const newState: GameState = {
     ...state,
     traitorVotes: newVotes,
     traitorVotesSubmitted: submitted,
-    sections: newSections,
     log: [...state.log, `裏切り者が密かに投票しました`],
   }
 
@@ -396,7 +396,12 @@ export function resolveImmediateEffects(state: GameState): GameState {
     }
   }
 
-  for (const action of Object.values(s.playedCards)) {
+  const sortedActions = Object.values(s.playedCards).sort((a, b) => {
+    const priority = (effect: string) => effect === 'repair' || effect === 'emergency_repair' ? 0 : 1
+    return priority(a.card.effect) - priority(b.card.effect)
+  })
+
+  for (const action of sortedActions) {
     const { card, targetSection, playerId } = action
     const playerName = getPlayerName(s, playerId)
     const secDef = s.sections.find(sec => sec.id === targetSection)
@@ -548,10 +553,17 @@ export function resolveImmediateEffects(state: GameState): GameState {
         const stunTargetId = (action as any).targetPlayerId as string | undefined
         const targetPlayer = s.players.find(p => p.id === (stunTargetId ?? ''))
         if (targetPlayer && !targetPlayer.isTransformed) {
-          s.players = s.players.map(p =>
-            p.id === targetPlayer.id ? { ...p, isStunned: true, stunnedTurnsLeft: 1 } : p,
+          const invisAction = Object.values(s.playedCards).find(
+            a => a.playerId === targetPlayer.id && a.card.effect === 'invisible',
           )
-          log.push(`⚡ ${playerName} がスタン！${targetPlayer.name} を1ターン制限`)
+          if (invisAction) {
+            log.push(`🫥 ${targetPlayer.name} はインビジブル中のためスタンできない`)
+          } else {
+            s.players = s.players.map(p =>
+              p.id === targetPlayer.id ? { ...p, isCaptured: true, capturedTurnsLeft: 3 } : p,
+            )
+            log.push(`⚡ ${playerName} がスタン！${targetPlayer.name} を3ターン拘束`)
+          }
         }
         break
       }
@@ -612,10 +624,7 @@ export function resolveEnemyAttack(state: GameState): GameState {
 
   let damage = baseEnemyDamage(state.round)
 
-  // Add damage markers
   const targetSec = state.sections.find((s) => s.id === state.attackTarget)!
-  const damageMarkers = targetSec.markers.filter((m) => m.type === 'damage').length
-  damage += damageMarkers
 
   // Emergency lockdown: damage = 0
   const lockdownActive = Object.values(state.playedCards).some(
@@ -657,7 +666,6 @@ export function resolveEnemyAttack(state: GameState): GameState {
     log.push(`💀 ${targetSec.nameJa} が崩壊した！`)
   }
 
-  // Clear damage markers on attacked section
   let sections = state.sections.map((sec) => {
     if (sec.id === state.attackTarget) {
       return {
