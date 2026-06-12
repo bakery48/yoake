@@ -16,7 +16,7 @@ export const DEFENSE_CARDS: Omit<Card, 'id'>[] = [
   },
   {
     name: 'Fortify',
-    nameJa: '防壁強化',
+    nameJa: '迎撃',
     type: 'defense',
     description: 'Next damage to target section is halved',
     descriptionJa: '対象セクションへの次のダメージを半減する',
