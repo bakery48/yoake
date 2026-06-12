@@ -5,6 +5,7 @@ import { PlayerView, SectionId, GamePhase } from '@/game/types'
 import FortressMap from './FortressMap'
 import SectionCard from './SectionCard'
 import CardReference from './CardReference'
+import RulebookModal from './RulebookModal'
 import PlayerHand from './PlayerHand'
 import PlayerList from './PlayerList'
 import PhaseIndicator from './PhaseIndicator'
@@ -154,6 +155,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
           >
             {isTraitor ? (isTransformed ? '👹 変身済み' : '🐍 裏切り者') : '⚔️ 防衛者'}
           </div>
+          <RulebookModal />
           <CardReference />
         </div>
       </div>
