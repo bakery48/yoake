@@ -213,7 +213,6 @@ function computePredictedDamage(state: GameState): number | null {
   const target = state.sections.find((s) => s.id === state.attackTarget)
   if (!target || target.isCollapsed) return null
   let dmg = baseEnemyDamage(state.round)
-  dmg += target.markers.filter((m) => m.type === 'damage').length
   const gate = state.sections.find((s) => s.id === 'gate')!
   if (gate.bonusActive && !gate.isCollapsed) dmg = Math.max(0, dmg - 1)
   if (target.doubleDamageNextRound) dmg = dmg * 2
@@ -237,21 +236,10 @@ export function submitTraitorVote(
   submittedSet.add(playerId)
   const submitted = Array.from(submittedSet)
 
-  // Latent traitors also place a damage marker on the voted section
-  const newMarker: Marker = {
-    id: markerId(),
-    placedByPlayerId: playerId,
-    type: 'damage',
-  }
-  const newSections = state.sections.map((s) =>
-    s.id === targetSection ? { ...s, markers: [...s.markers, newMarker] } : s,
-  )
-
   const newState: GameState = {
     ...state,
     traitorVotes: newVotes,
     traitorVotesSubmitted: submitted,
-    sections: newSections,
     log: [...state.log, `裏切り者が密かに投票しました`],
   }
 
@@ -630,10 +618,7 @@ export function resolveEnemyAttack(state: GameState): GameState {
 
   let damage = baseEnemyDamage(state.round)
 
-  // Add damage markers
   const targetSec = state.sections.find((s) => s.id === state.attackTarget)!
-  const damageMarkers = targetSec.markers.filter((m) => m.type === 'damage').length
-  damage += damageMarkers
 
   // Emergency lockdown: damage = 0
   const lockdownActive = Object.values(state.playedCards).some(
@@ -675,7 +660,6 @@ export function resolveEnemyAttack(state: GameState): GameState {
     log.push(`💀 ${targetSec.nameJa} が崩壊した！`)
   }
 
-  // Clear damage markers on attacked section
   let sections = state.sections.map((sec) => {
     if (sec.id === state.attackTarget) {
       return {
