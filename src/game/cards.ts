@@ -70,7 +70,7 @@ export const CURSED_CARDS: Omit<Card, 'id'>[] = [
     nameJa: '緊急封鎖',
     type: 'cursed',
     description: 'This turn enemy damage = 0, but next turn damage ×2',
-    descriptionJa: 'このターンの敵ダメージを0にするが、次のターンのダメージが×2になる',
+    descriptionJa: 'このターンの敵襲ダメージを0にするが、次のターンの敵襲ダメージが×2になる',
     effect: 'emergency_lockdown',
   },
   {
