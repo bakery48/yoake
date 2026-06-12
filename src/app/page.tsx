@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSocket } from '@/hooks/useSocket'
 import Lobby from '@/components/Lobby'
@@ -21,6 +21,7 @@ export default function Home() {
     setRole,
     rooms,
   } = useSocket()
+  const [navigating, setNavigating] = useState(false)
 
   // Navigate to game when game starts for our room
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function Home() {
       pendingRoomId &&
       gameState.roomId === pendingRoomId
     ) {
+      setNavigating(true)
       router.push(`/game/${pendingRoomId}`)
     }
   }, [gameState, pendingRoomId, router])
@@ -38,6 +40,14 @@ export default function Home() {
     pendingRoomId !== null &&
     gameState?.phase === 'lobby' &&
     gameState?.roomId === pendingRoomId
+
+  if (navigating) {
+    return (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+        <div className="text-amber-glow text-xl font-bold animate-pulse">ゲーム開始中…</div>
+      </div>
+    )
+  }
 
   return (
     <Lobby
