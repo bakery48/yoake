@@ -194,10 +194,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
       <div className="flex flex-1 overflow-hidden gap-0">
         {/* Center: Map → Sections → Hand */}
         <div className="flex flex-col flex-1 overflow-y-auto p-4 gap-4">
-          {/* Fortress map (background only) */}
-          <FortressMap className="h-32 flex-shrink-0" />
-
-          {/* Section cards row */}
+          {/* Fortress map with section cards overlaid */}
           {(() => {
             const selectable =
               (state.phase === 'action' && !needsPlayerTarget && !actionSubmitted) ||
@@ -208,7 +205,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
               state.phase === 'marker-visualization' ||
               (isTraitor && state.phase === 'action')
             return (
-              <div className="flex justify-center gap-3 flex-shrink-0">
+              <FortressMap className="h-52 flex-shrink-0">
                 {SECTION_ORDER.map((id) => {
                   const section = state.sections.find((s) => s.id === id)!
                   return (
@@ -228,7 +225,7 @@ export default function GameBoard({ state, onVote, onAction, onTransform, onLeav
                     />
                   )
                 })}
-              </div>
+              </FortressMap>
             )
           })()}
 
